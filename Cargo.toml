@@ -1,0 +1,37 @@
+[package]
+name = "simple-py-bevy"
+license-file = "LICENSE"
+authors = ["Lucas Weiler <lucas.l.weiler@leidos.com>"]
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+homepage = "https://github.com/lskyweiler/simple-py-bevy"
+
+[workspace]
+members = ["crates/*"]
+
+[lib]
+doctest = false
+
+[dependencies]
+simple_py_bevy.workspace = true
+simple_py_bevy_derive.workspace = true
+
+bevy = { workspace = true, optional = true }
+pyo3 = { workspace = true, optional = true }
+pyo3-stub-gen = { workspace = true, optional = true }
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+simple_py_bevy = { path = "crates/simple_py_bevy" }
+simple_py_bevy_derive = { path = "crates/simple_py_bevy_derive" }
+
+bevy = "~0.17"
+pyo3 = { version = "~0.27", features = ["multiple-pymethods"] }
+pyo3-stub-gen = { version = "~0.18", default-features = false }
+
+[features]
+pyo3 = ["dep:pyo3", "simple_py_bevy_derive/pyo3"]

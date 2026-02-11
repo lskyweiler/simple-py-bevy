@@ -1,0 +1,17 @@
+[package]
+name = "simple_py_bevy_derive"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+proc-macro = true
+doctest = false
+
+[dependencies]
+syn = "2.0"
+quote = "1.0"
+proc-macro2 = "1.0"
+darling = "0.23"
+
+[features]
+pyo3 = []

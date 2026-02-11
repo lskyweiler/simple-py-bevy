@@ -1,0 +1,18 @@
+[package]
+name = "simple_py_bevy"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+simple_py_bevy_derive = { path = "../simple_py_bevy_derive" }
+pyo3 = { workspace = true, optional = true }
+bevy = { workspace = true, optional = true }
+
+pyglam = { git = "https://github.com/lskyweiler/pyglam", branch = "refactor/pub", optional = true }
+
+[features]
+pyo3 = ["dep:pyo3", "dep:bevy", "simple_py_bevy_derive/pyo3"]
+testing = ["dep:pyo3", "dep:bevy", "dep:pyglam", "simple_py_bevy_derive/pyo3"]
