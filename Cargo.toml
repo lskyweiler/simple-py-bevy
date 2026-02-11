@@ -14,24 +14,23 @@ members = ["crates/*"]
 doctest = false
 
 [dependencies]
-simple_py_bevy.workspace = true
-simple_py_bevy_derive.workspace = true
+simple_py_bevy_derive = { path = "crates/simple_py_bevy_derive" }
 
 bevy = { workspace = true, optional = true }
 pyo3 = { workspace = true, optional = true }
 pyo3-stub-gen = { workspace = true, optional = true }
+
+pyglam = { git = "https://github.com/lskyweiler/pyglam", branch = "refactor/pub", optional = true }
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
-simple_py_bevy = { path = "crates/simple_py_bevy" }
-simple_py_bevy_derive = { path = "crates/simple_py_bevy_derive" }
-
 bevy = "~0.17"
 pyo3 = { version = "~0.27", features = ["multiple-pymethods"] }
 pyo3-stub-gen = { version = "~0.18", default-features = false }
 
 [features]
-pyo3 = ["dep:pyo3", "simple_py_bevy_derive/pyo3"]
+pyo3 = ["dep:pyo3", "dep:bevy", "simple_py_bevy_derive/pyo3"]
+testing = ["dep:pyo3", "dep:bevy", "dep:pyglam", "simple_py_bevy_derive/pyo3"]
