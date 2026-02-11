@@ -1,7 +1,7 @@
 extern crate proc_macro;
 extern crate quote;
 #[cfg(feature = "pyo3")]
-use crate::{backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG, py_ref, py_bevy_meth};
+use crate::{backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG, py_bevy_meth, py_ref};
 #[cfg(feature = "pyo3")]
 use darling::FromMeta;
 use proc_macro::TokenStream;
@@ -35,7 +35,7 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
             alive_ptr: std::sync::Weak<bool>
         }
         impl #py_bevy_ref_name {
-            pub fn from_world(world: &mut bevy::prelude::World) -> Self {
+            pub fn from_world(world: &mut simple_py_bevy::World) -> Self {
                 let world_ref = simple_py_bevy::UnsafeWorldRef::new(world);
                 Self::from_world_ref(world_ref)
             }
@@ -46,7 +46,7 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
                     alive_ptr: alive_ptr
                 }
             }
-            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<Mut<'_, #struct_name>> {
+            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<simple_py_bevy::Mut<'_, #struct_name>> {
                 self.world.get_res_mut::<#struct_name>()
             }
             fn map_to_inner<'a, F, U>(&self, f: F) -> pyo3::PyResult<U>
@@ -73,7 +73,7 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
 
         impl simple_py_bevy::BevyResRefIntoPyAny for #struct_name {
             fn into_py_any_from_world<'py>(
-                py: pyo3::prelude::Python<'py>, 
+                py: pyo3::prelude::Python<'py>,
                 world_ref: simple_py_bevy::UnsafeWorldRef
             ) -> pyo3::prelude::Py<pyo3::prelude::PyAny> {
                 let bevy_ref = #py_bevy_ref_name::from_world_ref(world_ref);
@@ -100,7 +100,7 @@ pub(crate) fn py_bevy_res_struct_impl(_args: TokenStream, ast: syn::ItemStruct) 
             None => format!(r#"{}"#, struct_name),
         };
         quote!(
-            #[derive(bevy::prelude::Resource, Clone, PyBevyResRef)]
+            #[derive(simple_py_bevy::Resource, Clone, PyBevyResRef)]
             #[pyo3::pyclass(name = #new_name)]
             #[pyo3_stub_gen::derive::gen_stub_pyclass]
             #ast
@@ -111,7 +111,7 @@ pub(crate) fn py_bevy_res_struct_impl(_args: TokenStream, ast: syn::ItemStruct) 
     #[cfg(not(feature = "pyo3"))]
     {
         quote!(
-            #[derive(bevy::prelude::Resource, Clone, DummyPyO3, DummyPyBevy)]
+            #[derive(simple_py_bevy::Resource, Clone, DummyPyO3, DummyPyBevy)]
             #ast
         )
         .into()

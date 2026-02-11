@@ -54,11 +54,12 @@ pub fn simple_pyclass(attr: TokenStream, input: TokenStream) -> TokenStream {
     match item {
         syn::Item::Struct(s) => simple_wrappers::simple_pyclass_impl(attr, s),
         syn::Item::Enum(e) => simple_wrappers::simple_enum_impl(attr, e),
-        unsupported => {
-            syn::Error::new_spanned(unsupported, "#[simple_pyclass] only supports structs or enums")
-                .into_compile_error()
-                .into()
-        }
+        unsupported => syn::Error::new_spanned(
+            unsupported,
+            "#[simple_pyclass] only supports structs or enums",
+        )
+        .into_compile_error()
+        .into(),
     }
 }
 /// Simple wrapper macro to make creating a pyclass's methods easier

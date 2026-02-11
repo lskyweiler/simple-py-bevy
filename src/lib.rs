@@ -15,6 +15,9 @@ pub use world_ref::{BevyHealthCheckPtr, UnsafeWorldRef};
 
 pub use simple_py_bevy_derive::*;
 
+#[cfg(feature = "pyo3")]
+pub use bevy::prelude::*;
+
 #[cfg(feature = "testing")]
 pub mod testing;
 
@@ -24,9 +27,9 @@ pub trait MakePathsAbsolute {
 
 #[cfg(feature = "pyo3")]
 mod pyo3_traits {
-    use pyo3::prelude::*;
     use super::UnsafeWorldRef;
     use bevy::prelude::Entity;
+    use pyo3::prelude::*;
 
     pub trait UnwrapOrFromYamlEnv<T> {
         fn unwrap_or_from_yaml_env(self) -> Result<T, Box<dyn std::error::Error>>;

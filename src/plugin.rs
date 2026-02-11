@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::{registry, world_ref};
+use bevy::prelude::*;
 
 pub struct PyBevyPlugin;
 impl Plugin for PyBevyPlugin {

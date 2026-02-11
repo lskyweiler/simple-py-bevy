@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use pyo3::{pyclass, pymethods};
 use pyglam;
+use pyo3::{pyclass, pymethods};
 use simple::prelude::*;
 
 #[derive(Clone)]

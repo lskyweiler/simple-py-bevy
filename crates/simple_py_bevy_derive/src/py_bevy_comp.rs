@@ -1,11 +1,11 @@
 extern crate proc_macro;
 extern crate quote;
-use proc_macro::TokenStream;
-use quote::quote;
 #[cfg(feature = "pyo3")]
-use crate::{backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG, py_ref, py_bevy_meth};
+use crate::{backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG, py_bevy_meth, py_ref};
 #[cfg(feature = "pyo3")]
 use darling::FromMeta;
+use proc_macro::TokenStream;
+use quote::quote;
 
 #[cfg(feature = "pyo3")]
 #[derive(Debug, FromMeta)]
@@ -29,15 +29,15 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
         #[pyo3::pyclass(unsendable)]
         pub struct #py_bevy_ref_name {
             world: simple_py_bevy::UnsafeWorldRef,
-            entity: bevy::prelude::Entity,
+            entity: simple_py_bevy::Entity,
             alive_ptr: std::sync::Weak<bool>
         }
         impl #py_bevy_ref_name {
-            pub fn from_world(world: &mut bevy::prelude::World,  entity: bevy::prelude::Entity) -> Self {
+            pub fn from_world(world: &mut simple_py_bevy::World,  entity: simple_py_bevy::Entity) -> Self {
                 let world_ref = simple_py_bevy::UnsafeWorldRef::new(world);
                 Self::from_world_ref(world_ref, entity)
             }
-            pub fn from_world_ref(world_ref: simple_py_bevy::UnsafeWorldRef,  entity: bevy::prelude::Entity) -> Self {
+            pub fn from_world_ref(world_ref: simple_py_bevy::UnsafeWorldRef,  entity: simple_py_bevy::Entity) -> Self {
                 let alive_ptr = world_ref.get_world_alive_ptr();
                 Self {
                     world: world_ref,
@@ -47,8 +47,8 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
             }
             pub fn create_py_bevy_ref<'py>(
                 py: pyo3::prelude::Python<'py>,
-                world: simple_py_bevy::UnsafeWorldRef, 
-                entity: bevy::prelude::Entity
+                world: simple_py_bevy::UnsafeWorldRef,
+                entity: simple_py_bevy::Entity
             ) -> pyo3::prelude::Py<pyo3::prelude::PyAny> {
                 let alive_ptr = world.get_world_alive_ptr();
                 let r_val = Self {
@@ -58,7 +58,7 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
                 };
                 pyo3::prelude::Py::new(py, r_val).unwrap().into_any()
             }
-            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<Mut<'_, #struct_name>> {
+            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<simple_py_bevy::Mut<'_, #struct_name>> {
                 self.world.get_comp_mut::<#struct_name>(&self.entity)
             }
 
@@ -86,16 +86,16 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
 
         impl simple_py_bevy::BevyCompRefIntoPyAny for #struct_name {
             fn into_py_any_from_world<'py>(
-                py: pyo3::prelude::Python<'py>, 
+                py: pyo3::prelude::Python<'py>,
                 world_ref: simple_py_bevy::UnsafeWorldRef,
-                entity: bevy::prelude::Entity
+                entity: simple_py_bevy::Entity
             ) -> pyo3::prelude::Py<pyo3::prelude::PyAny> {
                 let bevy_ref = #py_bevy_ref_name::from_world_ref(world_ref, entity);
                 pyo3::prelude::Py::new(py, bevy_ref).unwrap().into_any()
             }
             fn has_component(
-                world_ref: simple_py_bevy::UnsafeWorldRef, 
-                entity: bevy::prelude::Entity
+                world_ref: simple_py_bevy::UnsafeWorldRef,
+                entity: simple_py_bevy::Entity
             ) -> pyo3::prelude::PyResult<bool> {
                 world_ref.entity_has_comp::<#struct_name>(&entity)
             }
@@ -121,7 +121,7 @@ pub(crate) fn py_bevy_comp_impl(_args: TokenStream, ast: syn::ItemStruct) -> Tok
         quote!(
             // todo: need an easier way to define reflect + serde
 
-            #[derive(bevy::prelude::Component, PyBevyCompRef)]
+            #[derive(simple_py_bevy::Component, PyBevyCompRef)]
             #[pyo3::pyclass(name = #new_name)]
             #[pyo3_stub_gen::derive::gen_stub_pyclass]
             #ast
@@ -132,7 +132,7 @@ pub(crate) fn py_bevy_comp_impl(_args: TokenStream, ast: syn::ItemStruct) -> Tok
     #[cfg(not(feature = "pyo3"))]
     {
         quote!(
-            #[derive(bevy::prelude::Component, DummyPyO3, DummyPyBevy)]
+            #[derive(simple_py_bevy::Component, DummyPyO3, DummyPyBevy)]
             #ast
         )
         .into()

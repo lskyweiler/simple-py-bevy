@@ -98,7 +98,7 @@ pub(crate) fn py_bevy_config_res_struct_impl(
         let yaml_impl_export = yaml_loader_impls(&args, &new_name, &ast);
 
         quote::quote!(
-            #[derive(bevy::prelude::Resource, Clone, serde::Deserialize, serde::Serialize, PyBevyResRef)]
+            #[derive(simple_py_bevy::Resource, Clone, serde::Deserialize, serde::Serialize, PyBevyResRef)]
             #[pyo3::pyclass(name = #new_name)]
             #[pyo3_stub_gen::derive::gen_stub_pyclass]
             #ast
@@ -111,7 +111,7 @@ pub(crate) fn py_bevy_config_res_struct_impl(
     #[cfg(not(feature = "pyo3"))]
     {
         quote::quote!(
-            #[derive(bevy::prelude::Resource, Clone, serde::Deserialize, serde::Serialize, DummyPyO3, DummyPyBevy)]
+            #[derive(simple_py_bevy::Resource, Clone, serde::Deserialize, serde::Serialize, DummyPyO3, DummyPyBevy)]
             #ast
         )
         .into()
