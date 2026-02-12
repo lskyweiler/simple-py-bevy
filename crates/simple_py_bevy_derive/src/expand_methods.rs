@@ -1,9 +1,9 @@
 extern crate proc_macro;
 extern crate quote;
 use crate::backend;
+use darling::FromField;
 use quote::{format_ident, quote};
 use syn::ItemImpl;
-use darling::FromField;
 
 fn wrap_py_method_with_get_inner(method: &syn::ImplItemFn) -> syn::ImplItemFn {
     let mut new_method = method.clone();
@@ -23,19 +23,47 @@ fn wrap_py_method_with_get_inner(method: &syn::ImplItemFn) -> syn::ImplItemFn {
         }
         syn::ReturnType::Type(_, ty) => {
             let original_r_type = quote! { #ty };
-            new_method.block = syn::parse_quote!(
+            let mut transformed_r_type = quote! { -> pyo3::PyResult<#original_r_type> };
+            let mut prop_inner = false;
+
+            if let syn::Type::Path(type_path) = &**ty {
+                // Dont auto wrap return if it's already PyResult<something>
+                if type_path
+                    .path
+                    .segments
+                    .last()
+                    .map(|seg| seg.ident.to_string())
+                    == Some("PyResult".to_string())
                 {
-                    Ok(self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*))
+                    transformed_r_type = quote! { -> #original_r_type };
+                    prop_inner = true;
                 }
-            );
-            new_method.sig.output = syn::parse2(quote! { -> pyo3::PyResult<#original_r_type> })
-                .expect("Failed to set new return type");
+            }
+
+            if prop_inner {
+                new_method.block = syn::parse_quote!(
+                    {
+                        self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*)
+                    }
+                );
+            } else {
+                new_method.block = syn::parse_quote!(
+                    {
+                        Ok(self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*))
+                    }
+                );
+            }
+            new_method.sig.output =
+                syn::parse2(transformed_r_type).expect("Failed to set new return type");
         }
     };
     new_method
 }
 
-pub(crate) fn wrap_all_methods_with_get_inner(input: &mut ItemImpl, struct_suffix: String) -> proc_macro2::TokenStream {
+pub(crate) fn wrap_all_methods_with_get_inner(
+    input: &mut ItemImpl,
+    struct_suffix: String,
+) -> proc_macro2::TokenStream {
     let mut generated_methods = Vec::new();
 
     let struct_name = backend::get_struct_name_from_impl(&input);
@@ -70,6 +98,7 @@ pub(crate) fn wrap_all_methods_with_get_inner(input: &mut ItemImpl, struct_suffi
     })
 }
 
+#[allow(dead_code)]
 pub(crate) fn export_hash_py_fn(struct_name: &syn::Ident) -> proc_macro2::TokenStream {
     quote! {
         impl simple_py_bevy::GetTypeHash for #struct_name {
@@ -178,7 +207,9 @@ fn transform_setter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2:
 }
 
 /// Auto generate pyo3 getters and setters for all fields in the struct
-pub(crate) fn gen_get_set_for_fields_mapped_to_inner(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
+pub(crate) fn gen_get_set_for_fields_mapped_to_inner(
+    ast: &syn::DeriveInput,
+) -> proc_macro2::TokenStream {
     let mut transformed_fns = Vec::new();
 
     if let syn::Data::Struct(data) = &ast.data {

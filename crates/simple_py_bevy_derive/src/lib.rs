@@ -8,7 +8,7 @@ extern crate quote;
 
 use proc_macro::TokenStream;
 
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "py-ref")]
 mod backend;
 #[cfg(feature = "py-ref")]
 mod py_ref;
@@ -139,11 +139,10 @@ pub fn derive_py_ref_struct(_input: TokenStream) -> TokenStream {
 
         quote::quote! {
             #py_bevy_expand
-
         }
         .into()
     }
-    #[cfg(not(feature = "py-bevy"))]
+    #[cfg(not(feature = "py-ref"))]
     {
         dummy_pyo3::erase_input()
     }
