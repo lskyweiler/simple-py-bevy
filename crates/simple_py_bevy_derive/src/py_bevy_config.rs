@@ -98,6 +98,7 @@ pub(crate) fn py_bevy_config_res_struct_impl(
         let yaml_impl_export = yaml_loader_impls(&args, &new_name, &ast);
 
         quote::quote!(
+            #ast
             #yaml_impl_export
         )
         .into()
