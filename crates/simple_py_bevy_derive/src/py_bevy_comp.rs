@@ -1,6 +1,6 @@
 extern crate proc_macro;
 extern crate quote;
-use crate::{backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG, py_ref};
+use crate::backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG;
 use crate::expand_methods;
 use quote::quote;
 
@@ -8,7 +8,7 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
     let struct_name = ast.ident.clone();
     let py_bevy_ref_name = quote::format_ident!("{}BevyRef", ast.ident);
 
-    let py_ref_get_set_fns = py_ref::transform_py_ref_fields(&ast);
+    let py_ref_get_set_fns = expand_methods::gen_get_set_for_fields_mapped_to_inner(&ast);
 
     // generate a hash function on the original struct to make lookup easier
     let hash_py_fn_export = expand_methods::export_hash_py_fn(&ast.ident);

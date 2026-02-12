@@ -25,6 +25,7 @@ mod py_bevy_res;
 mod simple_wrappers;
 
 /// Auto generate a BevyRef and a Ref version of this struct and add traits to load this object from yaml
+// todo: need to put yaml impl into a derive macro and remove this in favor of explicit derives
 #[proc_macro_attribute]
 pub fn py_bevy_config_res(attr: TokenStream, input: TokenStream) -> TokenStream {
     let item = syn::parse(input).unwrap();
@@ -70,7 +71,7 @@ pub fn py_bevy_methods(_attr: TokenStream, _input: TokenStream) -> TokenStream {
     }
     #[cfg(not(feature = "py-bevy"))]
     {
-        dummy_pyo3::erase_input()
+        dummy_pyo3::passthrough(_input)
     }
 }
 #[proc_macro_attribute]
@@ -81,7 +82,7 @@ pub fn py_ref_methods(_attr: TokenStream, _input: TokenStream) -> TokenStream {
     }
     #[cfg(not(feature = "py-ref"))]
     {
-        dummy_pyo3::erase_input()
+        dummy_pyo3::passthrough(_input)
     }
 }
 
@@ -195,5 +196,9 @@ mod dummy_pyo3 {
     }
     pub fn erase_input() -> TokenStream {
         quote::quote! {}.into()
+    }
+
+    pub fn passthrough(input: TokenStream) -> TokenStream {
+        input
     }
 }

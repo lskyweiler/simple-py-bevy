@@ -1,118 +1,7 @@
 extern crate proc_macro;
 extern crate quote;
-use darling::FromField;
-use quote::{format_ident, quote};
 use crate::expand_methods;
-
-const BEVY_WORLD_PTR_DELETED_ERROR_MSG: &'static str = "Underlying world has been deleted";
-
-#[derive(Debug, FromField)]
-#[darling(attributes(py_bevy))]
-struct PyRefFieldAttrs {
-    // Specify how to transform the data into a refernce
-    #[darling(default)]
-    get_ref: Option<syn::TypePath>,
-    #[darling(default)]
-    skip: bool,
-    #[darling(default)]
-    get_only: bool,
-}
-
-fn transform_getter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2::TokenStream {
-    if attrs.skip {
-        return quote! {}.into();
-    }
-
-    let field_name = field.ident.as_ref().unwrap();
-    let getter_name = format_ident!("get_{}", field_name);
-
-    let inner_name: syn::ExprField = syn::parse_quote! {
-        parent.#field_name
-    };
-
-    let mut ret_val = field.ty.clone();
-
-    if let Some(transform_ref_class) = &attrs.get_ref {
-        ret_val = syn::Type::Path(transform_ref_class.clone());
-        quote! {
-            #[getter]
-            fn #getter_name(&mut self) -> pyo3::PyResult<#ret_val> {
-                self.map_to_inner(|mut inner| {
-                    unsafe {
-                        let mut parent = inner.as_mut();
-                        let parent_ptr = std::ptr::NonNull::new(&mut #inner_name).unwrap();
-                        Ok(#ret_val::from_parent(parent_ptr, self.alive_ptr.clone()))
-                    }
-                })
-            }
-        }
-        .into()
-    } else {
-        quote! {
-            #[getter]
-            fn #getter_name(&mut self) -> pyo3::PyResult<#ret_val> {
-                self.map_to_inner(|mut inner| {
-                    unsafe {
-                        let mut parent = inner.as_mut();
-                        Ok(#inner_name.clone())
-                    }
-                })
-            }
-        }
-        .into()
-    }
-}
-fn transform_setter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2::TokenStream {
-    if attrs.skip || attrs.get_only {
-        return quote! {}.into();
-    }
-
-    let field_name = field.ident.as_ref().unwrap();
-    let setter_name = format_ident!("set_{}", field_name);
-
-    let inner_name: syn::ExprField = syn::parse_quote! {
-        parent.#field_name
-    };
-
-    let field_type = field.ty.clone();
-
-    quote! {
-        #[setter]
-        fn #setter_name(&mut self, val: #field_type) -> pyo3::PyResult<()> {
-            self.map_to_inner(|mut inner| {
-                unsafe {
-                    let mut parent = inner.as_mut();
-                    #inner_name = val;
-                    Ok(())
-                }
-            })
-        }
-    }
-    .into()
-}
-
-/// Auto generate pyo3 getters and setters for all fields in the struct
-pub(crate) fn transform_py_ref_fields(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
-    let mut transformed_fns = Vec::new();
-
-    if let syn::Data::Struct(data) = &ast.data {
-        for field in &data.fields {
-            let attrs =
-                PyRefFieldAttrs::from_field(field).expect("Failed to parse field attributes");
-
-            let getter = transform_getter(&attrs, &field);
-            let setter = transform_setter(&attrs, &field);
-
-            transformed_fns.push(getter);
-            transformed_fns.push(setter);
-        }
-    }
-
-    quote! {
-        #(#transformed_fns)*
-    }
-    .into()
-}
+use crate::backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG;
 
 /// Auto generate a struct with a reference to the original type
 /// Also generate pyo3 getters and setters for all members without the skip attribute
@@ -120,9 +9,9 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
     let struct_name = ast.ident.clone();
     let py_ref_name = quote::format_ident!("{}Ref", ast.ident);
 
-    let py_ref_get_set_fns = transform_py_ref_fields(&ast);
+    let py_ref_get_set_fns = expand_methods::gen_get_set_for_fields_mapped_to_inner(&ast);
 
-    quote!(
+    quote::quote!(
         #[pyo3::pyclass(unsendable)]
         pub struct #py_ref_name {
             parent_ref: std::ptr::NonNull<#struct_name>,
@@ -173,7 +62,7 @@ pub(crate) fn py_ref_methods_impl(_attr: proc_macro::TokenStream, input: proc_ma
     let mut ast = syn::parse_macro_input!(input as syn::ItemImpl);
 
     let expanded = expand_methods::wrap_all_methods_with_get_inner(&mut ast, "Ref".to_string());
-    quote!(
+    quote::quote!(
         #ast
         #expanded
     )

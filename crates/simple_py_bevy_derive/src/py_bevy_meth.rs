@@ -2,7 +2,6 @@ extern crate proc_macro;
 extern crate quote;
 use proc_macro::TokenStream;
 use quote::quote;
-
 use crate::expand_methods;
 
 pub(crate) fn py_bevy_methods_impl(_attr: TokenStream, input: TokenStream) -> TokenStream {

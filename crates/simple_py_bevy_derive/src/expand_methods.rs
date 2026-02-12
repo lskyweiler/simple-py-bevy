@@ -1,8 +1,9 @@
 extern crate proc_macro;
 extern crate quote;
 use crate::backend;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::ItemImpl;
+use darling::FromField;
 
 fn wrap_py_method_with_get_inner(method: &syn::ImplItemFn) -> syn::ImplItemFn {
     let mut new_method = method.clone();
@@ -87,6 +88,114 @@ pub(crate) fn export_hash_py_fn(struct_name: &syn::Ident) -> proc_macro2::TokenS
                 Self::get_type_hash()
             }
         }
+    }
+    .into()
+}
+
+#[derive(Debug, FromField)]
+#[darling(attributes(py_bevy))]
+struct PyRefFieldAttrs {
+    // Specify how to transform the data into a refernce
+    #[darling(default)]
+    get_ref: Option<syn::TypePath>,
+    #[darling(default)]
+    skip: bool,
+    #[darling(default)]
+    get_only: bool,
+}
+
+fn transform_getter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2::TokenStream {
+    if attrs.skip {
+        return quote! {}.into();
+    }
+
+    let field_name = field.ident.as_ref().unwrap();
+    let getter_name = format_ident!("get_{}", field_name);
+
+    let inner_name: syn::ExprField = syn::parse_quote! {
+        parent.#field_name
+    };
+
+    let mut ret_val = field.ty.clone();
+
+    if let Some(transform_ref_class) = &attrs.get_ref {
+        ret_val = syn::Type::Path(transform_ref_class.clone());
+        quote! {
+            #[getter]
+            fn #getter_name(&mut self) -> pyo3::PyResult<#ret_val> {
+                self.map_to_inner(|mut inner| {
+                    unsafe {
+                        let mut parent = inner.as_mut();
+                        let parent_ptr = std::ptr::NonNull::new(&mut #inner_name).unwrap();
+                        Ok(#ret_val::from_parent(parent_ptr, self.alive_ptr.clone()))
+                    }
+                })
+            }
+        }
+        .into()
+    } else {
+        quote! {
+            #[getter]
+            fn #getter_name(&mut self) -> pyo3::PyResult<#ret_val> {
+                self.map_to_inner(|mut inner| {
+                    unsafe {
+                        let mut parent = inner.as_mut();
+                        Ok(#inner_name.clone())
+                    }
+                })
+            }
+        }
+        .into()
+    }
+}
+fn transform_setter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2::TokenStream {
+    if attrs.skip || attrs.get_only {
+        return quote! {}.into();
+    }
+
+    let field_name = field.ident.as_ref().unwrap();
+    let setter_name = format_ident!("set_{}", field_name);
+
+    let inner_name: syn::ExprField = syn::parse_quote! {
+        parent.#field_name
+    };
+
+    let field_type = field.ty.clone();
+
+    quote! {
+        #[setter]
+        fn #setter_name(&mut self, val: #field_type) -> pyo3::PyResult<()> {
+            self.map_to_inner(|mut inner| {
+                unsafe {
+                    let mut parent = inner.as_mut();
+                    #inner_name = val;
+                    Ok(())
+                }
+            })
+        }
+    }
+    .into()
+}
+
+/// Auto generate pyo3 getters and setters for all fields in the struct
+pub(crate) fn gen_get_set_for_fields_mapped_to_inner(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
+    let mut transformed_fns = Vec::new();
+
+    if let syn::Data::Struct(data) = &ast.data {
+        for field in &data.fields {
+            let attrs =
+                PyRefFieldAttrs::from_field(field).expect("Failed to parse field attributes");
+
+            let getter = transform_getter(&attrs, &field);
+            let setter = transform_setter(&attrs, &field);
+
+            transformed_fns.push(getter);
+            transformed_fns.push(setter);
+        }
+    }
+
+    quote! {
+        #(#transformed_fns)*
     }
     .into()
 }
