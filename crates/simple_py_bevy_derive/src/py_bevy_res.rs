@@ -1,32 +1,20 @@
 extern crate proc_macro;
 extern crate quote;
-#[cfg(feature = "pyo3")]
-use crate::{backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG, py_bevy_meth, py_ref};
-#[cfg(feature = "pyo3")]
-use darling::FromMeta;
-use proc_macro::TokenStream;
+use crate::expand_methods;
+use crate::{backend::BEVY_WORLD_PTR_DELETED_ERROR_MSG, py_ref};
 use quote::quote;
-
-#[cfg(feature = "pyo3")]
-#[derive(Debug, FromMeta)]
-#[darling(derive_syn_parse)]
-struct ConfigStructArgs {
-    #[darling(default)]
-    name: Option<String>,
-}
 
 /// Derive a version of this struct that uses the bevy world as a accessor of the structs data
 ///
 /// This needs to be different from the component version since you access components differently than resources
 ///
-#[cfg(feature = "pyo3")]
 pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let struct_name = ast.ident.clone();
     let py_bevy_ref_name = quote::format_ident!("{}BevyRef", ast.ident);
 
     let py_ref_get_set_fns = py_ref::transform_py_ref_fields(&ast);
 
-    let hash_py_fn_export = py_bevy_meth::export_hash_py_fn(&ast.ident);
+    let hash_py_fn_export = expand_methods::export_hash_py_fn(&ast.ident);
 
     quote! {
         #[pyo3::pyclass(unsendable)]
@@ -84,36 +72,3 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
     .into()
 }
 
-pub(crate) fn py_bevy_res_struct_impl(_args: TokenStream, ast: syn::ItemStruct) -> TokenStream {
-    #[cfg(feature = "pyo3")]
-    {
-        let struct_name = &ast.ident;
-        let args: ConfigStructArgs = match syn::parse(_args) {
-            Ok(v) => v,
-            Err(e) => {
-                return e.to_compile_error().into();
-            }
-        };
-
-        let new_name = match &args.name {
-            Some(n) => format!(r#"{}"#, n),
-            None => format!(r#"{}"#, struct_name),
-        };
-        quote!(
-            #[derive(simple_py_bevy::Resource, Clone, PyBevyResRef)]
-            #[pyo3::pyclass(name = #new_name)]
-            #[pyo3_stub_gen::derive::gen_stub_pyclass]
-            #ast
-        )
-        .into()
-    }
-
-    #[cfg(not(feature = "pyo3"))]
-    {
-        quote!(
-            #[derive(simple_py_bevy::Resource, Clone, DummyPyO3, DummyPyBevy)]
-            #ast
-        )
-        .into()
-    }
-}

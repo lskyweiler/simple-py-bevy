@@ -1,5 +1,7 @@
 {
     "rust-analyzer.cargo.features": [
-        "pyo3"
+        "py-bevy",
+        "testing",
+        "py-ref"
     ]
 }

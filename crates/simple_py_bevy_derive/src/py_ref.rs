@@ -2,12 +2,13 @@ extern crate proc_macro;
 extern crate quote;
 use darling::FromField;
 use quote::{format_ident, quote};
+use crate::expand_methods;
 
 const BEVY_WORLD_PTR_DELETED_ERROR_MSG: &'static str = "Underlying world has been deleted";
 
 #[derive(Debug, FromField)]
 #[darling(attributes(py_bevy))]
-struct PyBevyFieldAttrs {
+struct PyRefFieldAttrs {
     // Specify how to transform the data into a refernce
     #[darling(default)]
     get_ref: Option<syn::TypePath>,
@@ -17,7 +18,7 @@ struct PyBevyFieldAttrs {
     get_only: bool,
 }
 
-fn transform_getter(attrs: &PyBevyFieldAttrs, field: &syn::Field) -> proc_macro2::TokenStream {
+fn transform_getter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2::TokenStream {
     if attrs.skip {
         return quote! {}.into();
     }
@@ -61,7 +62,7 @@ fn transform_getter(attrs: &PyBevyFieldAttrs, field: &syn::Field) -> proc_macro2
         .into()
     }
 }
-fn transform_setter(attrs: &PyBevyFieldAttrs, field: &syn::Field) -> proc_macro2::TokenStream {
+fn transform_setter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2::TokenStream {
     if attrs.skip || attrs.get_only {
         return quote! {}.into();
     }
@@ -97,7 +98,7 @@ pub(crate) fn transform_py_ref_fields(ast: &syn::DeriveInput) -> proc_macro2::To
     if let syn::Data::Struct(data) = &ast.data {
         for field in &data.fields {
             let attrs =
-                PyBevyFieldAttrs::from_field(field).expect("Failed to parse field attributes");
+                PyRefFieldAttrs::from_field(field).expect("Failed to parse field attributes");
 
             let getter = transform_getter(&attrs, &field);
             let setter = transform_setter(&attrs, &field);
@@ -113,6 +114,8 @@ pub(crate) fn transform_py_ref_fields(ast: &syn::DeriveInput) -> proc_macro2::To
     .into()
 }
 
+/// Auto generate a struct with a reference to the original type
+/// Also generate pyo3 getters and setters for all members without the skip attribute
 pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let struct_name = ast.ident.clone();
     let py_ref_name = quote::format_ident!("{}Ref", ast.ident);
@@ -137,6 +140,14 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
                     None => Err(pyo3::exceptions::PyValueError::new_err(#BEVY_WORLD_PTR_DELETED_ERROR_MSG)),
                 }
             }
+            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<&mut #struct_name> {
+                match self.alive_ptr.upgrade() {
+                    Some(_) => {
+                        Ok(unsafe { self.parent_ref.clone().as_mut() })
+                    }
+                    None => Err(pyo3::exceptions::PyValueError::new_err(#BEVY_WORLD_PTR_DELETED_ERROR_MSG)),
+                }
+            }
         }
 
         impl simple_py_bevy::FromParent<#struct_name> for #py_ref_name {
@@ -157,3 +168,15 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
     )
     .into()
 }
+
+pub(crate) fn py_ref_methods_impl(_attr: proc_macro::TokenStream, input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let mut ast = syn::parse_macro_input!(input as syn::ItemImpl);
+
+    let expanded = expand_methods::wrap_all_methods_with_get_inner(&mut ast, "Ref".to_string());
+    quote!(
+        #ast
+        #expanded
+    )
+    .into()
+}
+
