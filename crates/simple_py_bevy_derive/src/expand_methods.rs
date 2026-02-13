@@ -217,6 +217,11 @@ pub(crate) fn gen_get_set_for_fields_mapped_to_inner(
             let attrs =
                 PyRefFieldAttrs::from_field(field).expect("Failed to parse field attributes");
 
+            if field.ident.is_none() {
+                // skip over tuple structs
+                continue;
+            }
+
             let getter = transform_getter(&attrs, &field);
             let setter = transform_setter(&attrs, &field);
 
