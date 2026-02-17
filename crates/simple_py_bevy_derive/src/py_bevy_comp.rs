@@ -72,7 +72,7 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
             #py_ref_get_set_fns
         }
 
-        impl simple_py_bevy::BevyCompRefIntoPyAny for #struct_name {
+        impl simple_py_bevy::BevyPyComp for #struct_name {
             fn into_py_any_from_world<'py>(
                 py: pyo3::prelude::Python<'py>,
                 world_ref: simple_py_bevy::UnsafeWorldRef,
@@ -86,6 +86,22 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
                 entity: simple_py_bevy::Entity
             ) -> pyo3::prelude::PyResult<bool> {
                 world_ref.entity_has_comp::<#struct_name>(&entity)
+            }
+
+            fn insert_into_world_from_bound_any(
+                comp: pyo3::prelude::Bound<'_, pyo3::prelude::PyAny>,
+                world_ref: simple_py_bevy::UnsafeWorldRef,
+                entity: simple_py_bevy::Entity,
+            ) -> pyo3::prelude::PyResult<()> {
+                use pyo3::types::PyAnyMethods; // ensures that extract is in scope
+
+                world_ref.map_to_world(|world| {
+                    let extracted: Self = comp.extract()?;
+                    let mut e = world.entity_mut(entity);
+                    e.insert(extracted);
+                    Ok(())
+                })?;
+                Ok(())
             }
         }
     )

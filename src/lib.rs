@@ -46,11 +46,15 @@ mod pyo3_traits {
         fn unwrap_or_from_yaml_env(self) -> Result<T, Box<dyn std::error::Error>>;
     }
 
-    pub trait BevyResRefIntoPyAny {
+    pub trait BevyPyRes {
         fn into_py_any_from_world<'py>(py: Python<'py>, world_ref: UnsafeWorldRef) -> Py<PyAny>;
+        fn insert_into_world_from_bound_any(
+            res: Bound<'_, PyAny>,
+            world_ref: UnsafeWorldRef,
+        ) -> PyResult<()>;
     }
 
-    pub trait BevyCompRefIntoPyAny {
+    pub trait BevyPyComp {
         fn into_py_any_from_world<'py>(
             py: Python<'py>,
             world_ref: UnsafeWorldRef,
@@ -58,6 +62,12 @@ mod pyo3_traits {
         ) -> Py<PyAny>;
 
         fn has_component(world_ref: UnsafeWorldRef, entity: Entity) -> PyResult<bool>;
+
+        fn insert_into_world_from_bound_any(
+            comp: Bound<'_, PyAny>,
+            world_ref: UnsafeWorldRef,
+            entity: Entity,
+        ) -> PyResult<()>;
     }
     pub trait GetTypeHash {
         fn get_type_hash() -> u128;
@@ -70,7 +80,7 @@ pub use pyo3_traits::*;
 // mod testing {
 //     use super::*;
 //     use crate::FromParent;
-// 
+//
 //     #[derive(Clone, PyStructRef)]
 //     #[pyclass]
 //     #[pyo3_stub_gen::derive::gen_stub_pyclass]
@@ -87,12 +97,12 @@ pub use pyo3_traits::*;
 //         fn foo_bar(&self) -> f32 {
 //             self.a + self.b as f32
 //         }
-// 
+//
 //         fn res(&self) -> PyResult<f32> {
 //             Ok(100.)
 //         }
 //     }
-// 
+//
 //     #[derive(Clone)]
 //     #[py_bevy_component]
 //     pub struct MyComp {
@@ -106,13 +116,13 @@ pub use pyo3_traits::*;
 //         fn py_new(a: f64, inner: MyInnerComp) -> Self {
 //             Self { a, inner }
 //         }
-// 
+//
 //         #[allow(unused_variables)]
 //         fn foo_bar(&self, a: Vec<i32>, c: MyComp) -> MyComp {
 //             self.clone()
 //         }
 //     }
-// 
+//
 //     #[py_bevy_resource]
 //     pub struct MyRes {
 //         #[py_bevy(skip)]
@@ -124,12 +134,12 @@ pub use pyo3_traits::*;
 //         fn py_new(a: f64) -> Self {
 //             Self { a }
 //         }
-// 
+//
 //         #[allow(unused_variables)]
 //         fn foo_bar(&self, a: Vec<i32>, c: MyComp) -> MyRes {
 //             self.clone()
 //         }
-// 
+//
 //         #[getter]
 //         fn get_a(&self) -> f64 {
 //             self.a
@@ -139,7 +149,7 @@ pub use pyo3_traits::*;
 //             self.a = b;
 //         }
 //     }
-// 
+//
 //     /// Simple test harness to allow us to unit test rust-owned views from python
 //     #[allow(dead_code)]
 //     #[pyclass(unsendable)]
@@ -147,14 +157,14 @@ pub use pyo3_traits::*;
 //         app: App,
 //         e: Entity,
 //     }
-// 
+//
 //     fn system(mut query: Query<&mut MyComp>, mut my_res: ResMut<MyRes>) {
 //         for mut my_c in &mut query {
 //             my_c.a += 1.
 //         }
 //         my_res.a += 1.;
 //     }
-// 
+//
 //     #[pymethods]
 //     impl TestPrototypeContext {
 //         #[new]
@@ -165,13 +175,13 @@ pub use pyo3_traits::*;
 //                 .insert_resource(my_res);
 //             let world = app.world_mut();
 //             let e_id = world.spawn(my_comp).id().clone();
-// 
+//
 //             Self { app: app, e: e_id }
 //         }
 //         fn step(&mut self) {
 //             self.app.update();
 //         }
-// 
+//
 //         fn get_comp_ref(&mut self) -> MyCompBevyRef {
 //             let world = self.app.world_mut();
 //             MyCompBevyRef::from_world(world, self.e)
@@ -182,10 +192,10 @@ pub use pyo3_traits::*;
 //         }
 //     }
 // }
-// 
+//
 // #[cfg(feature = "testing")]
 // use pyo3::prelude::*;
-// 
+//
 // #[cfg(feature = "testing")]
 // #[pymodule]
 // fn simple_py_bevy<'py>(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -193,6 +203,6 @@ pub use pyo3_traits::*;
 //     m.add_class::<testing::MyComp>()?;
 //     m.add_class::<testing::MyRes>()?;
 //     m.add_class::<testing::MyInnerComp>()?;
-// 
+//
 //     Ok(())
 // }
