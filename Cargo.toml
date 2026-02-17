@@ -11,6 +11,7 @@ homepage = "https://github.com/lskyweiler/simple-py-bevy"
 members = ["crates/*"]
 
 [lib]
+crate-type = ["cdylib", "rlib"]
 doctest = false
 
 [dependencies]
@@ -19,8 +20,6 @@ simple_py_bevy_derive = { path = "crates/simple_py_bevy_derive" }
 bevy = { workspace = true, optional = true }
 pyo3 = { workspace = true, optional = true }
 pyo3-stub-gen = { workspace = true, optional = true }
-
-pyglam = { git = "https://github.com/lskyweiler/pyglam", branch = "refactor/pub", optional = true }
 
 [workspace.package]
 version = "0.1.0"
@@ -32,5 +31,12 @@ pyo3 = { version = "~0.27", features = ["multiple-pymethods"] }
 pyo3-stub-gen = { version = "~0.18", default-features = false }
 
 [features]
-pyo3 = ["dep:pyo3", "dep:bevy", "simple_py_bevy_derive/pyo3"]
-testing = ["dep:pyo3", "dep:bevy", "dep:pyglam", "simple_py_bevy_derive/pyo3"]
+py-bevy = ["dep:pyo3", "dep:bevy", "simple_py_bevy_derive/py-bevy"]
+py-ref = ["dep:pyo3", "simple_py_bevy_derive/py-ref"]
+testing = [
+    "dep:pyo3",
+    "dep:bevy",
+    "dep:pyo3-stub-gen",
+    "simple_py_bevy_derive/py-bevy",
+    "simple_py_bevy_derive/py-ref",
+]

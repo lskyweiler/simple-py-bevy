@@ -1,11 +1,11 @@
 extern crate proc_macro;
 extern crate quote;
-#[cfg(feature = "pyo3")]
+#[cfg(feature = "py-bevy")]
 use darling::FromMeta;
 use proc_macro::TokenStream;
 use quote::quote;
 
-#[cfg(feature = "pyo3")]
+#[cfg(feature = "py-bevy")]
 #[derive(Debug, FromMeta)]
 #[darling(derive_syn_parse)]
 struct ConfigStructArgs {
@@ -14,7 +14,7 @@ struct ConfigStructArgs {
 }
 
 pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> TokenStream {
-    #[cfg(feature = "pyo3")]
+    #[cfg(feature = "py-bevy")]
     {
         let struct_name = &ast.ident;
         let args: ConfigStructArgs = match syn::parse(_args) {
@@ -35,7 +35,7 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
         .into()
     }
 
-    #[cfg(not(feature = "pyo3"))]
+    #[cfg(not(feature = "py-bevy"))]
     {
         quote!(
             #[derive(DummyPyO3)]
@@ -45,7 +45,7 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
     }
 }
 pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenStream {
-    #[cfg(feature = "pyo3")]
+    #[cfg(feature = "py-bevy")]
     {
         let struct_name = &ast.ident;
         let args: ConfigStructArgs = match syn::parse(_args) {
@@ -66,7 +66,7 @@ pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenS
         .into()
     }
 
-    #[cfg(not(feature = "pyo3"))]
+    #[cfg(not(feature = "py-bevy"))]
     {
         quote!(
             #[derive(DummyPyO3)]
@@ -79,7 +79,7 @@ pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenS
 pub(crate) fn simple_pymethods_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(input as syn::ItemImpl);
 
-    #[cfg(feature = "pyo3")]
+    #[cfg(feature = "py-bevy")]
     {
         quote!(
             #[pyo3::pymethods]
@@ -89,7 +89,7 @@ pub(crate) fn simple_pymethods_impl(_args: TokenStream, input: TokenStream) -> T
         .into()
     }
 
-    #[cfg(not(feature = "pyo3"))]
+    #[cfg(not(feature = "py-bevy"))]
     {
         quote!(
             #ast

@@ -8,17 +8,24 @@ extern crate quote;
 
 use proc_macro::TokenStream;
 
-#[cfg(feature = "pyo3")]
+#[cfg(feature = "py-ref")]
 mod backend;
-#[cfg(feature = "pyo3")]
+#[cfg(feature = "py-ref")]
 mod py_ref;
 
+#[cfg(feature = "py-ref")]
+mod expand_methods;
+#[cfg(feature = "py-bevy")]
 mod py_bevy_comp;
 mod py_bevy_config;
+#[cfg(feature = "py-bevy")]
 mod py_bevy_meth;
+#[cfg(feature = "py-bevy")]
 mod py_bevy_res;
 mod simple_wrappers;
 
+/// Auto generate a BevyRef and a Ref version of this struct and add traits to load this object from yaml
+// todo: need to put yaml impl into a derive macro and remove this in favor of explicit derives
 #[proc_macro_attribute]
 pub fn py_bevy_config_res(attr: TokenStream, input: TokenStream) -> TokenStream {
     let item = syn::parse(input).unwrap();
@@ -26,20 +33,6 @@ pub fn py_bevy_config_res(attr: TokenStream, input: TokenStream) -> TokenStream 
         syn::Item::Struct(struct_) => py_bevy_config::py_bevy_config_res_struct_impl(attr, struct_),
         unsupported => {
             syn::Error::new_spanned(unsupported, "#[py_bevy_config] only supports structs")
-                .into_compile_error()
-                .into()
-        }
-    }
-}
-
-/// Auto generate a struct to expose this struct to python as a reference to bevy's world
-#[proc_macro_attribute]
-pub fn py_bevy_component(attr: TokenStream, input: TokenStream) -> TokenStream {
-    let item = syn::parse(input).unwrap();
-    match item {
-        syn::Item::Struct(struct_) => py_bevy_comp::py_bevy_comp_impl(attr, struct_),
-        unsupported => {
-            syn::Error::new_spanned(unsupported, "#[py_bevy_component] only supports structs")
                 .into_compile_error()
                 .into()
         }
@@ -69,184 +62,128 @@ pub fn simple_pymethods(attr: TokenStream, input: TokenStream) -> TokenStream {
     simple_wrappers::simple_pymethods_impl(attr, input)
 }
 
-/// Auto generate a struct to expose this struct to python as a reference to bevy's world
-#[proc_macro_attribute]
-pub fn py_bevy_resource(attr: TokenStream, input: TokenStream) -> TokenStream {
-    let item = syn::parse(input).unwrap();
-    match item {
-        syn::Item::Struct(struct_) => py_bevy_res::py_bevy_res_struct_impl(attr, struct_),
-        unsupported => {
-            syn::Error::new_spanned(unsupported, "#[py_bevy_resource] only supports structs")
-                .into_compile_error()
-                .into()
-        }
-    }
-}
-
 /// Auto generate methods to expose this struct's methods to python
-///
-/// Example output:
-/// ```
-/// #[py_bevy_component]
-/// pub struct MyComp {
-///     a: f64,
-///     vec: map3d::DVec3,
-/// }
-/// #[proc_macro_attribute]
-/// impl MyComp {
-///     #[new]
-///     fn py_new(a: f64, vec: map3d::DVec3) -> Self {
-///         Self { a, vec }
-///     }
-///
-///     #[getter]
-///     fn get_a(&self) -> f64 {
-///         self.a
-///     }
-///     #[setter]
-///     fn set_a(&mut self, a: f64) {
-///         self.a = a;
-///     }
-///     #[getter]
-///     fn get_vec(&self) -> map3d::DVec3 {
-///         self.vec
-///     }
-/// }
-///
-/// #[pyclass(unsendable)]
-/// struct MyCompBevyRef {
-///     world: Arc<Mutex<Option<NonNull<World>>>>,
-///     entity: Entity,
-///     world_alive_ptr: Weak<bool>,
-/// }
-/// impl MyCompBevyRef {
-///     fn from_world(world: &mut World, entity: Entity) -> Self {
-///         let bevy_health = world.resource::<BevyHealthCheckPtr>().clone();
-///         Self {
-///             world: Arc::new(Mutex::new(NonNull::new(world))),
-///             entity: entity,
-///             world_alive_ptr: bevy_health.downgrade(),
-///         }
-///     }
-///     fn get_world_mut(&self) -> &mut World {
-///         unsafe { self.world.lock().unwrap().unwrap().as_mut() }
-///     }
-///     fn get_comp_ref_mut(&self) -> PyResult<Mut<'_, MyComp>> {
-///         match self.world_alive_ptr.upgrade() {
-///             Some(_) => {
-///                 let world = self.get_world_mut();
-///                 let comp = world.get_mut::<MyComp>(self.entity).unwrap();
-///                 Ok(comp)
-///             }
-///             None => Err(PyValueError::new_err("Underlying world has been deleted")),
-///         }
-///     }
-/// }
-/// #[pymethods]
-/// impl MyCompBevyRef {
-///     #[getter]
-///     fn get_vec(&self) -> PyResult<map3d::DVec3> {
-///         Ok(self.get_comp_ref_mut()?.get_vec())
-///     }
-///     #[getter]
-///     fn get_a(&self) -> PyResult<f64> {
-///         Ok(self.get_comp_ref_mut()?.a)
-///     }
-///     #[setter]
-///     fn set_a(&mut self, a: f64) -> PyResult<()> {
-///         self.get_comp_ref_mut()?.a = a;
-///         Ok(())
-///     }
-/// }
-/// impl Into<MyComp> for MyCompBevyRef {
-///     fn into(self) -> MyComp {
-///         let comp_ref = self
-///             .get_comp_ref_mut()
-///             .expect("Underlying world has been deleted");
-///         (*comp_ref).clone()
-///     }
-/// }
-/// ```
 #[proc_macro_attribute]
-pub fn py_bevy_methods(attr: TokenStream, input: TokenStream) -> TokenStream {
-    py_bevy_meth::py_bevy_methods_impl(attr, input)
+pub fn py_bevy_methods(_attr: TokenStream, _input: TokenStream) -> TokenStream {
+    #[cfg(feature = "py-bevy")]
+    {
+        py_bevy_meth::py_bevy_methods_impl(_attr, _input)
+    }
+    #[cfg(not(feature = "py-bevy"))]
+    {
+        dummy_pyo3::passthrough(_input)
+    }
+}
+#[proc_macro_attribute]
+pub fn py_ref_methods(_attr: TokenStream, _input: TokenStream) -> TokenStream {
+    #[cfg(feature = "py-ref")]
+    {
+        py_ref::py_ref_methods_impl(_attr, _input)
+    }
+    #[cfg(not(feature = "py-ref"))]
+    {
+        dummy_pyo3::passthrough(_input)
+    }
 }
 
-#[cfg(feature = "pyo3")]
+/// Generate a BevyCompRef version of this struct
 #[proc_macro_derive(PyBevyCompRef, attributes(py_bevy))]
-pub fn derive_py_bevy_comp_structs(input: TokenStream) -> TokenStream {
-    let ast = syn::parse_macro_input!(input as syn::DeriveInput);
-
-    let py_ref_expand = py_ref::py_ref_struct_impl(&ast);
-    let py_bevy_expand = py_bevy_comp::derive_py_bevy_comp_struct_impl(&ast);
-
-    quote::quote! {
-        #py_bevy_expand
-
-        #py_ref_expand
-
-    }
-    .into()
-}
-#[cfg(not(feature = "pyo3"))]
-#[proc_macro_derive(DummyPyBevy, attributes(py_bevy))]
 pub fn derive_py_bevy_comp_structs(_input: TokenStream) -> TokenStream {
-    dummy_pyo3::erase_input()
+    #[cfg(feature = "py-bevy")]
+    {
+        let ast = syn::parse_macro_input!(_input as syn::DeriveInput);
+
+        let py_bevy_expand =  py_bevy_comp::derive_py_bevy_comp_struct_impl(&ast);
+
+        quote::quote! {
+            #py_bevy_expand
+
+        }
+        .into()
+    }
+    #[cfg(not(feature = "py-bevy"))]
+    {
+        dummy_pyo3::erase_input()
+    }
 }
 
-#[cfg(feature = "pyo3")]
+/// Generate a BevyResRef version of this struct
 #[proc_macro_derive(PyBevyResRef, attributes(py_bevy))]
-pub fn derive_py_bevy_res_structs(input: TokenStream) -> TokenStream {
-    let ast = syn::parse_macro_input!(input as syn::DeriveInput);
+pub fn derive_py_bevy_res_structs(_input: TokenStream) -> TokenStream {
+    #[cfg(feature = "py-bevy")]
+    {
+        let ast = syn::parse_macro_input!(_input as syn::DeriveInput);
 
-    let py_ref_expand = py_ref::py_ref_struct_impl(&ast);
-    let py_bevy_expand = py_bevy_res::export_bevy_ref_impls(&ast);
+        let py_bevy_expand = py_bevy_res::export_bevy_ref_impls(&ast);
 
-    quote::quote! {
-        #py_bevy_expand
+        quote::quote! {
+            #py_bevy_expand
 
-        #py_ref_expand
-
+        }
+        .into()
     }
-    .into()
+    #[cfg(not(feature = "py-bevy"))]
+    {
+        dummy_pyo3::erase_input()
+    }
+}
+
+/// Generate a Ref version of this struct
+#[proc_macro_derive(PyStructRef, attributes(py_bevy))]
+pub fn derive_py_ref_struct(_input: TokenStream) -> TokenStream {
+    #[cfg(feature = "py-ref")]
+    {
+        let ast = syn::parse_macro_input!(_input as syn::DeriveInput);
+
+        let py_bevy_expand = py_ref::py_ref_struct_impl(&ast);
+
+        quote::quote! {
+            #py_bevy_expand
+        }
+        .into()
+    }
+    #[cfg(not(feature = "py-ref"))]
+    {
+        dummy_pyo3::erase_input()
+    }
 }
 
 /// Needed to mock pyo3 macro attributes in case we're not using the pyo3 feature
-#[cfg(not(feature = "pyo3"))]
+#[cfg(not(feature = "py-bevy"))]
 #[proc_macro_derive(DummyPyO3, attributes(pyo3))]
 pub fn derive_dummy_pyo3(_input: TokenStream) -> TokenStream {
     dummy_pyo3::erase_input()
 }
-#[cfg(not(feature = "pyo3"))]
+#[cfg(not(feature = "py-bevy"))]
 #[proc_macro_attribute]
 pub fn new(_attr: TokenStream, _item: TokenStream) -> TokenStream {
     dummy_pyo3::erase_input()
 }
-#[cfg(not(feature = "pyo3"))]
+#[cfg(not(feature = "py-bevy"))]
 #[proc_macro_attribute]
 pub fn getter(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as syn::Item);
     dummy_pyo3::strip_attributes(&ast)
 }
-#[cfg(not(feature = "pyo3"))]
+#[cfg(not(feature = "py-bevy"))]
 #[proc_macro_attribute]
 pub fn setter(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as syn::Item);
     dummy_pyo3::strip_attributes(&ast)
 }
-#[cfg(not(feature = "pyo3"))]
+#[cfg(not(feature = "py-bevy"))]
 #[proc_macro_attribute]
 pub fn staticmethod(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as syn::Item);
     dummy_pyo3::strip_attributes(&ast)
 }
-#[cfg(not(feature = "pyo3"))]
+#[cfg(not(feature = "py-bevy"))]
 #[proc_macro_attribute]
 pub fn classattr(_attr: TokenStream, _item: TokenStream) -> TokenStream {
     dummy_pyo3::erase_input()
 }
 
-#[cfg(not(feature = "pyo3"))]
+#[cfg(not(feature = "py-bevy"))]
 mod dummy_pyo3 {
     use super::*;
 
@@ -258,5 +195,9 @@ mod dummy_pyo3 {
     }
     pub fn erase_input() -> TokenStream {
         quote::quote! {}.into()
+    }
+
+    pub fn passthrough(input: TokenStream) -> TokenStream {
+        input
     }
 }

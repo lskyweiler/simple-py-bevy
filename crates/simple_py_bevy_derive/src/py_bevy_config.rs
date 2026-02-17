@@ -1,12 +1,12 @@
 extern crate proc_macro;
 extern crate quote;
-#[cfg(feature = "pyo3")]
+#[cfg(feature = "py-bevy")]
 use darling::FromMeta;
 use proc_macro::TokenStream;
-#[cfg(feature = "pyo3")]
+#[cfg(feature = "py-bevy")]
 use quote::ToTokens;
 
-#[cfg(feature = "pyo3")]
+#[cfg(feature = "py-bevy")]
 #[derive(Debug, FromMeta)]
 #[darling(derive_syn_parse)]
 struct ConfigStructArgs {
@@ -15,7 +15,7 @@ struct ConfigStructArgs {
     yaml_env_var: syn::Path,
 }
 
-#[cfg(feature = "pyo3")]
+#[cfg(feature = "py-bevy")]
 fn yaml_loader_impls(
     args: &ConfigStructArgs,
     new_name: &str,
@@ -79,7 +79,7 @@ pub(crate) fn py_bevy_config_res_struct_impl(
     args: TokenStream,
     ast: syn::ItemStruct,
 ) -> TokenStream {
-    #[cfg(feature = "pyo3")]
+    #[cfg(feature = "py-bevy")]
     {
         let struct_name = &ast.ident;
 
@@ -98,20 +98,16 @@ pub(crate) fn py_bevy_config_res_struct_impl(
         let yaml_impl_export = yaml_loader_impls(&args, &new_name, &ast);
 
         quote::quote!(
-            #[derive(simple_py_bevy::Resource, Clone, serde::Deserialize, serde::Serialize, PyBevyResRef)]
-            #[pyo3::pyclass(name = #new_name)]
-            #[pyo3_stub_gen::derive::gen_stub_pyclass]
             #ast
-
             #yaml_impl_export
         )
         .into()
     }
 
-    #[cfg(not(feature = "pyo3"))]
+    #[cfg(not(feature = "py-bevy"))]
     {
         quote::quote!(
-            #[derive(simple_py_bevy::Resource, Clone, serde::Deserialize, serde::Serialize, DummyPyO3, DummyPyBevy)]
+            #[derive(DummyPyO3)]
             #ast
         )
         .into()
