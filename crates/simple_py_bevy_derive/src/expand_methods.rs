@@ -15,7 +15,7 @@ fn wrap_py_method_with_get_inner(method: &syn::ImplItemFn) -> syn::ImplItemFn {
         syn::ReturnType::Default => {
             new_method.block = syn::parse_quote!(
                 {
-                    self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*);
+                    self.get_inner_ref_mut()?.#old_sig_name(#(#old_arg_names),*);
                     Ok(())
                 }
             );
@@ -43,13 +43,13 @@ fn wrap_py_method_with_get_inner(method: &syn::ImplItemFn) -> syn::ImplItemFn {
             if prop_inner {
                 new_method.block = syn::parse_quote!(
                     {
-                        self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*)
+                        self.get_inner_ref_mut()?.#old_sig_name(#(#old_arg_names),*)
                     }
                 );
             } else {
                 new_method.block = syn::parse_quote!(
                     {
-                        Ok(self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*))
+                        Ok(self.get_inner_ref_mut()?.#old_sig_name(#(#old_arg_names),*))
                     }
                 );
             }

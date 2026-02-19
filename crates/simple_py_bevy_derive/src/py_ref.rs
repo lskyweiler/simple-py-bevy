@@ -29,7 +29,15 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
                     None => Err(pyo3::exceptions::PyValueError::new_err(#BEVY_WORLD_PTR_DELETED_ERROR_MSG)),
                 }
             }
-            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<&mut #struct_name> {
+            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<&#struct_name> {
+                match self.alive_ptr.upgrade() {
+                    Some(_) => {
+                        Ok(unsafe { self.parent_ref.clone().as_ref() })
+                    }
+                    None => Err(pyo3::exceptions::PyValueError::new_err(#BEVY_WORLD_PTR_DELETED_ERROR_MSG)),
+                }
+            }
+            fn get_inner_ref_mut(&self) -> pyo3::prelude::PyResult<&mut #struct_name> {
                 match self.alive_ptr.upgrade() {
                     Some(_) => {
                         Ok(unsafe { self.parent_ref.clone().as_mut() })

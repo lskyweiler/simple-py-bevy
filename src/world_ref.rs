@@ -70,6 +70,14 @@ impl UnsafeWorldRef {
             ))),
         })
     }
+    pub fn get_comp<'w, C: Component>(&self, entity: &Entity) -> PyResult<&C> {
+        self.map_to_world(|world| match world.get::<C>(*entity) {
+            Some(comp) => Ok(comp),
+            None => Err(PyValueError::new_err(format!(
+                "Entity {entity} doesn't have component C"
+            ))),
+        })
+    }
     pub fn entity_has_comp<'w, C: Component<Mutability = Mutable>>(
         &self,
         entity: &Entity,
@@ -78,6 +86,14 @@ impl UnsafeWorldRef {
     }
     pub fn get_res_mut<R: Resource>(&self) -> PyResult<Mut<'_, R>> {
         self.map_to_world(|world| match world.get_resource_mut::<R>() {
+            Some(comp) => Ok(comp),
+            None => Err(PyValueError::new_err(format!(
+                "World does not contain resource R"
+            ))),
+        })
+    }
+    pub fn get_res<R: Resource>(&self) -> PyResult<&R> {
+        self.map_to_world(|world| match world.get_resource::<R>() {
             Some(comp) => Ok(comp),
             None => Err(PyValueError::new_err(format!(
                 "World does not contain resource R"

@@ -46,7 +46,10 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
                 };
                 pyo3::prelude::Py::new(py, r_val).unwrap().into_any()
             }
-            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<simple_py_bevy::Mut<'_, #struct_name>> {
+            pub fn get_inner_ref(&self) -> pyo3::prelude::PyResult<&#struct_name> {
+                self.world.get_comp::<#struct_name>(&self.entity)
+            }
+            pub fn get_inner_ref_mut(&self) -> pyo3::prelude::PyResult<simple_py_bevy::Mut<'_, #struct_name>> {
                 self.world.get_comp_mut::<#struct_name>(&self.entity)
             }
 
@@ -56,7 +59,7 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
             {
                 match self.alive_ptr.upgrade() {
                     Some(_) => {
-                        let mut inner = self.get_inner_ref()?;
+                        let mut inner = self.get_inner_ref_mut()?;
                         let parent_ptr = std::ptr::NonNull::new(&mut (*inner)).unwrap();
                         f(parent_ptr.clone())
                     }
