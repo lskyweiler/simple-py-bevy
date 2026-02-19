@@ -48,6 +48,19 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
             }
         }
 
+        impl std::ops::Deref for #py_ref_name {
+            type Target = #struct_name;
+
+            fn deref(&self) -> &Self::Target {
+                self.get_inner_ref().unwrap()
+            }
+        }
+        impl std::ops::DerefMut for #py_ref_name {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                self.get_inner_ref_mut().unwrap()
+            }
+        }
+
         impl simple_py_bevy::FromParent<#struct_name> for #py_ref_name {
             type Output = #py_ref_name;
 
@@ -55,6 +68,19 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
                 #py_ref_name {
                     parent_ref: parent,
                     alive_ptr: alive_ptr
+                }
+            }
+        }
+        impl Into<#struct_name> for #py_ref_name {
+            fn into(self) -> #struct_name {
+                self.get_inner_ref().unwrap().clone()
+            }
+        }
+        impl Into<#struct_name> for either::Either<#struct_name, #py_ref_name> {
+            fn into(self) -> #struct_name {
+                match self {
+                    either::Left(s) => s,
+                    either::Right(s) => s.into()
                 }
             }
         }

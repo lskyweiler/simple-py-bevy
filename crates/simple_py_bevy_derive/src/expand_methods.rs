@@ -128,6 +128,8 @@ struct PyRefFieldAttrs {
     #[darling(default)]
     get_ref: Option<syn::TypePath>,
     #[darling(default)]
+    other_set_type: Option<syn::TypePath>,
+    #[darling(default)]
     skip: bool,
     #[darling(default)]
     get_only: bool,
@@ -191,13 +193,20 @@ fn transform_setter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2:
 
     let field_type = field.ty.clone();
 
+    let field_type = match &attrs.other_set_type {
+        Some(rhs_type) => {
+            syn::parse_quote! { either::Either<#field_type, #rhs_type> }
+        },
+        None => field.ty.clone()
+    };
+
     quote! {
         #[setter]
         fn #setter_name(&mut self, val: #field_type) -> pyo3::PyResult<()> {
             self.map_to_inner(|mut inner| {
                 unsafe {
                     let mut parent = inner.as_mut();
-                    #inner_name = val;
+                    #inner_name = val.into();
                     Ok(())
                 }
             })
