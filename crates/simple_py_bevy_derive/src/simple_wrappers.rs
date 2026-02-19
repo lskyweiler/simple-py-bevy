@@ -1,11 +1,11 @@
 extern crate proc_macro;
 extern crate quote;
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "minimal-pyo3")]
 use darling::FromMeta;
 use proc_macro::TokenStream;
 use quote::quote;
 
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "minimal-pyo3")]
 #[derive(Debug, FromMeta)]
 #[darling(derive_syn_parse)]
 struct ConfigStructArgs {
@@ -14,7 +14,7 @@ struct ConfigStructArgs {
 }
 
 pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> TokenStream {
-    #[cfg(feature = "py-bevy")]
+    #[cfg(feature = "minimal-pyo3")]
     {
         let struct_name = &ast.ident;
         let args: ConfigStructArgs = match syn::parse(_args) {
@@ -28,14 +28,14 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
             None => format!(r#"{}"#, struct_name),
         };
         quote!(
-            #[pyo3::pyclass(name = #new_name)]
             #[pyo3_stub_gen::derive::gen_stub_pyclass]
+            #[pyo3::pyclass(name = #new_name)]
             #ast
         )
         .into()
     }
 
-    #[cfg(not(feature = "py-bevy"))]
+    #[cfg(not(feature = "minimal-pyo3"))]
     {
         quote!(
             #[derive(DummyPyO3)]
@@ -45,7 +45,7 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
     }
 }
 pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenStream {
-    #[cfg(feature = "py-bevy")]
+    #[cfg(feature = "minimal-pyo3")]
     {
         let struct_name = &ast.ident;
         let args: ConfigStructArgs = match syn::parse(_args) {
@@ -59,14 +59,14 @@ pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenS
             None => format!(r#"{}"#, struct_name),
         };
         quote!(
-            #[pyo3::pyclass(name = #new_name, eq)]  // the only real difference between the enum and pyclass impls
             #[pyo3_stub_gen::derive::gen_stub_pyclass_enum]
+            #[pyo3::pyclass(name = #new_name, eq)]  // the only real difference between the enum and pyclass impls
             #ast
         )
         .into()
     }
 
-    #[cfg(not(feature = "py-bevy"))]
+    #[cfg(not(feature = "minimal-pyo3"))]
     {
         quote!(
             #[derive(DummyPyO3)]
@@ -79,17 +79,17 @@ pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenS
 pub(crate) fn simple_pymethods_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(input as syn::ItemImpl);
 
-    #[cfg(feature = "py-bevy")]
+    #[cfg(feature = "minimal-pyo3")]
     {
         quote!(
-            #[pyo3::pymethods]
             #[pyo3_stub_gen::derive::gen_stub_pymethods]
+            #[pyo3::pymethods]
             #ast
         )
         .into()
     }
 
-    #[cfg(not(feature = "py-bevy"))]
+    #[cfg(not(feature = "minimal-pyo3"))]
     {
         quote!(
             #ast

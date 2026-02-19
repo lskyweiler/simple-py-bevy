@@ -1,12 +1,9 @@
 extern crate proc_macro;
 extern crate quote;
-#[cfg(feature = "py-bevy")]
 use darling::FromMeta;
 use proc_macro::TokenStream;
-#[cfg(feature = "py-bevy")]
 use quote::ToTokens;
 
-#[cfg(feature = "py-bevy")]
 #[derive(Debug, FromMeta)]
 #[darling(derive_syn_parse)]
 struct ConfigStructArgs {
@@ -15,7 +12,6 @@ struct ConfigStructArgs {
     yaml_env_var: syn::Path,
 }
 
-#[cfg(feature = "py-bevy")]
 fn yaml_loader_impls(
     args: &ConfigStructArgs,
     new_name: &str,
@@ -79,7 +75,6 @@ pub(crate) fn py_bevy_config_res_struct_impl(
     args: TokenStream,
     ast: syn::ItemStruct,
 ) -> TokenStream {
-    #[cfg(feature = "py-bevy")]
     {
         let struct_name = &ast.ident;
 
@@ -100,15 +95,6 @@ pub(crate) fn py_bevy_config_res_struct_impl(
         quote::quote!(
             #ast
             #yaml_impl_export
-        )
-        .into()
-    }
-
-    #[cfg(not(feature = "py-bevy"))]
-    {
-        quote::quote!(
-            #[derive(DummyPyO3)]
-            #ast
         )
         .into()
     }

@@ -1,21 +1,21 @@
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "bevy")]
 mod plugin;
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "bevy")]
 mod registry;
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "bevy")]
 mod world_ref;
 
 // public re-exports
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "bevy")]
 pub use plugin::PyBevyPlugin;
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "bevy")]
 pub use registry::PyObjectRegistry;
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "bevy")]
 pub use world_ref::{BevyHealthCheckPtr, UnsafeWorldRef};
 
 pub use simple_py_bevy_derive::*;
 
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "bevy")]
 pub use bevy::prelude::*;
 
 pub trait MakePathsAbsolute {
@@ -36,15 +36,15 @@ mod ref_traits {
 #[cfg(feature = "py-ref")]
 pub use ref_traits::*;
 
-#[cfg(feature = "py-bevy")]
+pub trait UnwrapOrFromYamlEnv<T> {
+    fn unwrap_or_from_yaml_env(self) -> Result<T, Box<dyn std::error::Error>>;
+}
+
+#[cfg(feature = "bevy")]
 mod pyo3_traits {
     use super::UnsafeWorldRef;
     use bevy::prelude::Entity;
     use pyo3::prelude::*;
-
-    pub trait UnwrapOrFromYamlEnv<T> {
-        fn unwrap_or_from_yaml_env(self) -> Result<T, Box<dyn std::error::Error>>;
-    }
 
     pub trait BevyPyRes {
         fn into_py_any_from_world<'py>(py: Python<'py>, world_ref: UnsafeWorldRef) -> Py<PyAny>;
@@ -73,7 +73,7 @@ mod pyo3_traits {
         fn get_type_hash() -> u128;
     }
 }
-#[cfg(feature = "py-bevy")]
+#[cfg(feature = "bevy")]
 pub use pyo3_traits::*;
 
 // #[cfg(feature = "testing")]
