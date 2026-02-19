@@ -40,18 +40,18 @@ py-bevy = [
     "minimal-pyo3",
     "bevy",
     "simple_py_bevy_derive/py-bevy",
-    # "pyo3/multiple-pymethods",
+    "pyo3/multiple-pymethods",
 ]
 # generates structs that reference rust owned data
 py-ref = [
     "minimal-pyo3",
     "simple_py_bevy_derive/py-ref",
-    # "pyo3/multiple-pymethods",
+    "pyo3/multiple-pymethods",
 ]
-testing = [
-    "dep:pyo3",
-    "bevy",
-    "dep:pyo3-stub-gen",
-    "simple_py_bevy_derive/py-bevy",
-    "simple_py_bevy_derive/py-ref",
-]
+# testing = [
+#     "dep:pyo3",
+#     "bevy",
+#     "dep:pyo3-stub-gen",
+#     "simple_py_bevy_derive/py-bevy",
+#     "simple_py_bevy_derive/py-ref",
+# ]
