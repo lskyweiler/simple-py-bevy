@@ -12,6 +12,7 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
     let py_ref_get_set_fns = expand_methods::gen_get_set_for_fields_mapped_to_inner(&ast);
 
     quote::quote!(
+        #[derive(Clone)]
         #[pyo3::pyclass(unsendable)]
         pub struct #py_ref_name {
             parent_ref: std::ptr::NonNull<#struct_name>,
@@ -29,7 +30,7 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
                     None => Err(pyo3::exceptions::PyValueError::new_err(#BEVY_WORLD_PTR_DELETED_ERROR_MSG)),
                 }
             }
-            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<&#struct_name> {
+            pub fn get_inner_ref(&self) -> pyo3::prelude::PyResult<&#struct_name> {
                 match self.alive_ptr.upgrade() {
                     Some(_) => {
                         Ok(unsafe { self.parent_ref.clone().as_ref() })
@@ -37,7 +38,7 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
                     None => Err(pyo3::exceptions::PyValueError::new_err(#BEVY_WORLD_PTR_DELETED_ERROR_MSG)),
                 }
             }
-            fn get_inner_ref_mut(&self) -> pyo3::prelude::PyResult<&mut #struct_name> {
+            pub fn get_inner_ref_mut(&self) -> pyo3::prelude::PyResult<&mut #struct_name> {
                 match self.alive_ptr.upgrade() {
                     Some(_) => {
                         Ok(unsafe { self.parent_ref.clone().as_mut() })
