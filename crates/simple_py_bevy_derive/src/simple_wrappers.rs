@@ -11,6 +11,8 @@ use quote::quote;
 struct ConfigStructArgs {
     #[darling(default)]
     name: Option<String>,
+    #[darling(default)]
+    stub_gen_module: Option<String>,
 }
 
 pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> TokenStream {
@@ -27,8 +29,17 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
             Some(n) => format!(r#"{}"#, n),
             None => format!(r#"{}"#, struct_name),
         };
+        let stub_gen_attr = match &args.stub_gen_module {
+            Some(module) => {
+                quote! { #[pyo3_stub_gen::derive::gen_stub_pyclass(module = #module)] }
+            }
+            None => {
+                quote! { #[pyo3_stub_gen::derive::gen_stub_pyclass] }
+            }
+        };
+
         quote!(
-            #[pyo3_stub_gen::derive::gen_stub_pyclass]
+            #stub_gen_attr
             #[pyo3::pyclass(name = #new_name)]
             #ast
         )
@@ -58,8 +69,17 @@ pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenS
             Some(n) => format!(r#"{}"#, n),
             None => format!(r#"{}"#, struct_name),
         };
+        let stub_gen_attr = match &args.stub_gen_module {
+            Some(module) => {
+                quote! { #[pyo3_stub_gen::derive::gen_stub_pyclass_enum(module = #module)] }
+            }
+            None => {
+                quote! { #[pyo3_stub_gen::derive::gen_stub_pyclass_enum] }
+            }
+        };
+
         quote!(
-            #[pyo3_stub_gen::derive::gen_stub_pyclass_enum]
+            #stub_gen_attr
             #[pyo3::pyclass(name = #new_name, eq)]  // the only real difference between the enum and pyclass impls
             #ast
         )
