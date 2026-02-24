@@ -15,7 +15,7 @@ fn wrap_py_method_with_get_inner(method: &syn::ImplItemFn) -> syn::ImplItemFn {
         syn::ReturnType::Default => {
             new_method.block = syn::parse_quote!(
                 {
-                    self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*);
+                    self.get_inner_ref_mut()?.#old_sig_name(#(#old_arg_names),*);
                     Ok(())
                 }
             );
@@ -43,13 +43,13 @@ fn wrap_py_method_with_get_inner(method: &syn::ImplItemFn) -> syn::ImplItemFn {
             if prop_inner {
                 new_method.block = syn::parse_quote!(
                     {
-                        self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*)
+                        self.get_inner_ref_mut()?.#old_sig_name(#(#old_arg_names),*)
                     }
                 );
             } else {
                 new_method.block = syn::parse_quote!(
                     {
-                        Ok(self.get_inner_ref()?.#old_sig_name(#(#old_arg_names),*))
+                        Ok(self.get_inner_ref_mut()?.#old_sig_name(#(#old_arg_names),*))
                     }
                 );
             }
@@ -128,6 +128,8 @@ struct PyRefFieldAttrs {
     #[darling(default)]
     get_ref: Option<syn::TypePath>,
     #[darling(default)]
+    other_set_type: Option<syn::TypePath>,
+    #[darling(default)]
     skip: bool,
     #[darling(default)]
     get_only: bool,
@@ -191,13 +193,20 @@ fn transform_setter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2:
 
     let field_type = field.ty.clone();
 
+    let field_type = match &attrs.other_set_type {
+        Some(rhs_type) => {
+            syn::parse_quote! { either::Either<#field_type, #rhs_type> }
+        },
+        None => field.ty.clone()
+    };
+
     quote! {
         #[setter]
         fn #setter_name(&mut self, val: #field_type) -> pyo3::PyResult<()> {
             self.map_to_inner(|mut inner| {
                 unsafe {
                     let mut parent = inner.as_mut();
-                    #inner_name = val;
+                    #inner_name = val.into();
                     Ok(())
                 }
             })

@@ -22,21 +22,36 @@ pyo3 = { workspace = true, optional = true }
 pyo3-stub-gen = { workspace = true, optional = true }
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [workspace.dependencies]
 bevy = "~0.17"
-pyo3 = { version = "~0.27", features = ["multiple-pymethods"] }
+pyo3 = { version = "~0.27" }
 pyo3-stub-gen = { version = "~0.18", default-features = false }
 
 [features]
-py-bevy = ["dep:pyo3", "dep:bevy", "simple_py_bevy_derive/py-bevy"]
-py-ref = ["dep:pyo3", "simple_py_bevy_derive/py-ref"]
-testing = [
-    "dep:pyo3",
-    "dep:bevy",
-    "dep:pyo3-stub-gen",
+# absolute minimum pyo3 support. useful for only generating stubs
+minimal-pyo3 = ["dep:pyo3", "simple_py_bevy_derive/minimal-pyo3"]
+# generate bevy macros without pyo3
+bevy = ["dep:bevy"]
+# generates python exposed references to bevy owned data
+py-bevy = [
+    "minimal-pyo3",
+    "bevy",
     "simple_py_bevy_derive/py-bevy",
-    "simple_py_bevy_derive/py-ref",
+    "pyo3/multiple-pymethods",
 ]
+# generates structs that reference rust owned data
+py-ref = [
+    "minimal-pyo3",
+    "simple_py_bevy_derive/py-ref",
+    "pyo3/multiple-pymethods",
+]
+# testing = [
+#     "dep:pyo3",
+#     "bevy",
+#     "dep:pyo3-stub-gen",
+#     "simple_py_bevy_derive/py-bevy",
+#     "simple_py_bevy_derive/py-ref",
+# ]

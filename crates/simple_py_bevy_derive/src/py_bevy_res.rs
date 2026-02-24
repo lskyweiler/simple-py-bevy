@@ -34,7 +34,10 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
                     alive_ptr: alive_ptr
                 }
             }
-            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<simple_py_bevy::Mut<'_, #struct_name>> {
+            fn get_inner_ref(&self) -> pyo3::prelude::PyResult<&#struct_name> {
+                self.world.get_res::<#struct_name>()
+            }
+            fn get_inner_ref_mut(&self) -> pyo3::prelude::PyResult<simple_py_bevy::Mut<'_, #struct_name>> {
                 self.world.get_res_mut::<#struct_name>()
             }
             fn map_to_inner<'a, F, U>(&self, f: F) -> pyo3::PyResult<U>
@@ -43,7 +46,7 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
             {
                 match self.alive_ptr.upgrade() {
                     Some(_) => {
-                        let mut inner = self.get_inner_ref()?;
+                        let mut inner = self.get_inner_ref_mut()?;
                         let parent_ptr = std::ptr::NonNull::new(&mut (*inner)).unwrap();
                         f(parent_ptr.clone())
                     }
