@@ -84,6 +84,10 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
                 })?;
                 Ok(())
             }
+
+            fn has_resource(world_ref: simple_py_bevy::UnsafeWorldRef) -> pyo3::prelude::PyResult<bool> {
+                world_ref.has_res::<#struct_name>()
+            }
         }
     }
     .into()
