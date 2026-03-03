@@ -28,7 +28,7 @@ edition = "2021"
 [workspace.dependencies]
 bevy = "~0.17"
 pyo3 = { version = "~0.27" }
-pyo3-stub-gen = { version = "~0.18", default-features = false }
+pyo3-stub-gen = { version = "~0.19", default-features = false }
 
 [features]
 # absolute minimum pyo3 support. useful for only generating stubs
