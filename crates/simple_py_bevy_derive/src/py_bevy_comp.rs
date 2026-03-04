@@ -76,13 +76,23 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
         }
 
         impl simple_py_bevy::BevyPyComp for #struct_name {
-            fn into_py_any_from_world<'py>(
+            fn into_bevy_ref_py_any_from_world<'py>(
                 py: pyo3::prelude::Python<'py>,
                 world_ref: simple_py_bevy::UnsafeWorldRef,
                 entity: simple_py_bevy::Entity
             ) -> pyo3::prelude::Py<pyo3::prelude::PyAny> {
                 let bevy_ref = #py_bevy_ref_name::from_world_ref(world_ref, entity);
                 pyo3::prelude::Py::new(py, bevy_ref).unwrap().into_any()
+            }
+            fn remove_from_entity_and_return_owned_py_any<'py>(
+                py: pyo3::prelude::Python<'py>,
+                world_ref: &mut simple_py_bevy::UnsafeWorldRef,
+                entity: simple_py_bevy::Entity
+            ) -> pyo3::prelude::PyResult<Option<pyo3::prelude::Py<pyo3::prelude::PyAny>>> {
+                match world_ref.remove_comp::<#struct_name>(&entity)? {
+                    Some(comp) => Ok(Some(pyo3::prelude::Py::new(py, comp).unwrap().into_any())),
+                    None => Ok(None)
+                }
             }
             fn has_component(
                 world_ref: simple_py_bevy::UnsafeWorldRef,

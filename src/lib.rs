@@ -47,19 +47,28 @@ mod pyo3_traits {
     use pyo3::prelude::*;
 
     pub trait BevyPyRes {
-        fn into_py_any_from_world<'py>(py: Python<'py>, world_ref: UnsafeWorldRef) -> Py<PyAny>;
+        fn into_bevy_ref_py_any_from_world<'py>(
+            py: Python<'py>,
+            world_ref: UnsafeWorldRef,
+        ) -> Py<PyAny>;
         fn insert_into_world_from_bound_any(
             res: Bound<'_, PyAny>,
             world_ref: UnsafeWorldRef,
         ) -> PyResult<()>;
+        fn has_resource(world_ref: UnsafeWorldRef) -> PyResult<bool>;
     }
 
     pub trait BevyPyComp {
-        fn into_py_any_from_world<'py>(
+        fn into_bevy_ref_py_any_from_world<'py>(
             py: Python<'py>,
             world_ref: UnsafeWorldRef,
             entity: Entity,
         ) -> Py<PyAny>;
+        fn remove_from_entity_and_return_owned_py_any<'py>(
+            py: Python<'py>,
+            world_ref: &mut UnsafeWorldRef,
+            entity: Entity,
+        ) -> PyResult<Option<Py<PyAny>>>;
 
         fn has_component(world_ref: UnsafeWorldRef, entity: Entity) -> PyResult<bool>;
 

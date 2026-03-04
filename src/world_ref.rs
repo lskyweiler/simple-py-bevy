@@ -78,11 +78,24 @@ impl UnsafeWorldRef {
             ))),
         })
     }
+    pub fn remove_comp<'w, C: Component>(&mut self, entity: &Entity) -> PyResult<Option<C>> {
+        self.map_to_world(|world| {
+            let mut e = world.entity_mut(*entity);
+            match e.take::<C>() {
+                Some(comp) => Ok(Some(comp)),
+                None => Ok(None),
+            }
+        })
+    }
     pub fn entity_has_comp<'w, C: Component<Mutability = Mutable>>(
         &self,
         entity: &Entity,
     ) -> PyResult<bool> {
         self.map_to_world(|world| Ok(world.get_mut::<C>(*entity).is_some()))
+    }
+
+    pub fn has_res<'w, R: Resource>(&self) -> PyResult<bool> {
+        self.map_to_world(|world| Ok(world.get_resource::<R>().is_some()))
     }
     pub fn get_res_mut<R: Resource>(&self) -> PyResult<Mut<'_, R>> {
         self.map_to_world(|world| match world.get_resource_mut::<R>() {

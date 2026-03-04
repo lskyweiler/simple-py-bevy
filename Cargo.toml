@@ -22,13 +22,13 @@ pyo3 = { workspace = true, optional = true }
 pyo3-stub-gen = { workspace = true, optional = true }
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 [workspace.dependencies]
 bevy = "~0.17"
 pyo3 = { version = "~0.27" }
-pyo3-stub-gen = { version = "~0.18", default-features = false }
+pyo3-stub-gen = { version = "~0.19", default-features = false }
 
 [features]
 # absolute minimum pyo3 support. useful for only generating stubs
