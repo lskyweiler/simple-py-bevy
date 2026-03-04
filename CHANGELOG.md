@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-04
+
+### 🚀 Features
+
+- Added mechanism to remove components in registry
+- Added mechanism to check if the resource exists
+
+### ⚙️ Miscellaneous Tasks
+
+- Bumped pyo3 stub gen to 19
+
 ## [0.2.0] - 2026-02-24
 
 ### 🚀 Features
@@ -15,6 +26,11 @@ All notable changes to this project will be documented in this file.
 - Expanded bevyref methods to make it easier to work with in rust
 - Ref functions public to work easier with rust
 - Added back multiple-pymethods feature
+
+### ⚙️ Miscellaneous Tasks
+
+- Prep for release v0.2.0
+- Updated lock
 
 ## [0.1.0] - 2026-02-17
 
