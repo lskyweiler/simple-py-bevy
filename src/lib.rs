@@ -78,6 +78,9 @@ mod pyo3_traits {
             entity: Entity,
         ) -> PyResult<()>;
     }
+    pub trait DowncastReflect {
+        fn downcast_into_py_any<'py>(py: Python<'py>, reflect: &Box<dyn bevy::reflect::Reflect>) -> PyResult<Py<PyAny>>;
+    }
     pub trait GetTypeHash {
         fn get_type_hash() -> u128;
     }
