@@ -15,6 +15,8 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
     let py_ref_get_set_fns = expand_methods::gen_get_set_for_fields_mapped_to_inner(&ast);
 
     let hash_py_fn_export = expand_methods::export_hash_py_fn(&ast.ident);
+    
+    let downcast_reflect_export = expand_methods::export_downcast_into_py_any(&ast.ident);
 
     quote! {
         #[pyo3::pyclass(unsendable)]
@@ -56,10 +58,16 @@ pub(crate) fn export_bevy_ref_impls(ast: &syn::DeriveInput) -> proc_macro2::Toke
         }
 
         #hash_py_fn_export
+        
+        #downcast_reflect_export
 
         #[pyo3::pymethods]
         impl #py_bevy_ref_name {
             #py_ref_get_set_fns
+
+            fn to_owned(&self) -> pyo3::prelude::PyResult<#struct_name> {
+                Ok(self.get_inner_ref()?.clone())
+            }
         }
 
         impl simple_py_bevy::BevyPyRes for #struct_name {

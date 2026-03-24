@@ -12,6 +12,7 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
 
     // generate a hash function on the original struct to make lookup easier
     let hash_py_fn_export = expand_methods::export_hash_py_fn(&ast.ident);
+    let downcast_reflect_export = expand_methods::export_downcast_into_py_any(&ast.ident);
 
     quote!(
         #[pyo3::pyclass(unsendable)]
@@ -70,9 +71,15 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
 
         #hash_py_fn_export
 
+        #downcast_reflect_export
+
         #[pyo3::pymethods]
         impl #py_bevy_ref_name {
             #py_ref_get_set_fns
+        
+            fn to_owned(&self) -> pyo3::prelude::PyResult<#struct_name> {
+                Ok(self.get_inner_ref()?.clone())
+            }
         }
 
         impl simple_py_bevy::BevyPyComp for #struct_name {

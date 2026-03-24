@@ -120,6 +120,29 @@ pub(crate) fn export_hash_py_fn(struct_name: &syn::Ident) -> proc_macro2::TokenS
     }
     .into()
 }
+#[allow(dead_code)]
+pub(crate) fn export_downcast_into_py_any(struct_name: &syn::Ident) -> proc_macro2::TokenStream {
+    quote! {
+        impl simple_py_bevy::DowncastReflect for #struct_name {
+            fn downcast_into_py_any<'py>(
+                py: pyo3::Python<'py>,
+                reflect: &Box<dyn bevy::reflect::Reflect>
+            ) -> pyo3::PyResult<pyo3::Py<pyo3::PyAny>> {
+                let ref_comp = reflect.as_ref();
+                match ref_comp.downcast_ref::<#struct_name>() {
+                    Some(t) => {
+                        // cloning the value here since &T cant be cast into py object. but need to return a PyRef
+                        Ok(pyo3::prelude::Py::new(py, t.clone()).unwrap().into_any())
+                    },
+                    None => return Err(pyo3::exceptions::PyValueError::new_err(
+                        "Could not downcast object"
+                    )),
+                }
+            }
+        }
+    }
+    .into()
+}
 
 #[derive(Debug, FromField)]
 #[darling(attributes(py_bevy))]
@@ -196,8 +219,8 @@ fn transform_setter(attrs: &PyRefFieldAttrs, field: &syn::Field) -> proc_macro2:
     let field_type = match &attrs.other_set_type {
         Some(rhs_type) => {
             syn::parse_quote! { either::Either<#field_type, #rhs_type> }
-        },
-        None => field.ty.clone()
+        }
+        None => field.ty.clone(),
     };
 
     quote! {

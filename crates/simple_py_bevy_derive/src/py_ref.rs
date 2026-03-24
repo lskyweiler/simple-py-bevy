@@ -88,6 +88,10 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
         #[pyo3::pymethods]
         impl #py_ref_name {
             #py_ref_get_set_fns
+
+            fn to_owned(&self) -> pyo3::prelude::PyResult<#struct_name> {
+                Ok(self.get_inner_ref()?.clone())
+            }
         }
     )
     .into()

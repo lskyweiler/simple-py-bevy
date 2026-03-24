@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-03-24
+
+### 🚀 Features
+
+- Added method to downcast a boxed reflect from python type hash
+
 ## [0.3.0] - 2026-03-04
 
 ### 🚀 Features
@@ -12,6 +18,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Bumped pyo3 stub gen to 19
+- Prep for release v0.3.0
 
 ## [0.2.0] - 2026-02-24
 

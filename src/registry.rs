@@ -1,4 +1,4 @@
-use crate::{world_ref, BevyPyComp, BevyPyRes, GetTypeHash};
+use crate::{world_ref, BevyPyComp, BevyPyRes, DowncastReflect, GetTypeHash};
 use bevy::prelude::*;
 use pyo3::{exceptions::PyValueError, prelude::*};
 use std::collections::HashMap;
@@ -13,10 +13,13 @@ type RemoveCompAndReturnOwnedFromWorldFn =
 type BevyEntHashCompFn = fn(world_ref::UnsafeWorldRef, Entity) -> PyResult<bool>;
 type BevyCompInsertFromBoundAny =
     fn(Bound<'_, PyAny>, world_ref::UnsafeWorldRef, Entity) -> PyResult<()>;
+type DowncastReflectFn = fn(Python<'_>, &Box<dyn bevy::reflect::Reflect>) -> PyResult<Py<PyAny>>;
 
 /// Registry mapping py_classes to internal bevy components and resources
 #[derive(Resource)]
 pub struct PyObjectRegistry {
+    downcast_from_reflect_fns: HashMap<u128, DowncastReflectFn>,
+
     // This is complicated since we need to statically compile how to construct and extract these types,
     //     while being able to get what type it is from a python object
     //
@@ -35,6 +38,7 @@ pub struct PyObjectRegistry {
 impl PyObjectRegistry {
     pub fn new() -> Self {
         Self {
+            downcast_from_reflect_fns: HashMap::new(),
             create_bevy_ref_res_fns: HashMap::new(),
             bevy_has_res_fns: HashMap::new(),
             built_in_insert_res: HashMap::new(),
@@ -44,16 +48,20 @@ impl PyObjectRegistry {
             build_in_insert_comps: HashMap::new(),
         }
     }
-    pub fn register_res<T: GetTypeHash + BevyPyRes>(&mut self) {
+    pub fn register_res<T: GetTypeHash + BevyPyRes + DowncastReflect>(&mut self) {
         let hash = T::get_type_hash();
+        self.downcast_from_reflect_fns
+            .insert(hash, T::downcast_into_py_any);
         self.create_bevy_ref_res_fns
             .insert(hash, T::into_bevy_ref_py_any_from_world);
         self.bevy_has_res_fns.insert(hash, T::has_resource);
         self.built_in_insert_res
             .insert(hash, T::insert_into_world_from_bound_any);
     }
-    pub fn register_comp<T: GetTypeHash + BevyPyComp>(&mut self) {
+    pub fn register_comp<T: GetTypeHash + BevyPyComp + DowncastReflect>(&mut self) {
         let hash = T::get_type_hash();
+        self.downcast_from_reflect_fns
+            .insert(hash, T::downcast_into_py_any);
         self.create_bevy_ref_comp_fns
             .insert(hash, T::into_bevy_ref_py_any_from_world);
         self.remove_comp_and_return_fns
@@ -99,6 +107,16 @@ impl PyObjectRegistry {
     }
     pub fn res_exists(&self, type_hash: u128) -> bool {
         self.bevy_has_res_fns.contains_key(&type_hash)
+    }
+
+    pub fn downcast_into_py_any<'py>(
+        &self,
+        py: Python<'py>,
+        type_hash: u128,
+        comp: &Box<dyn bevy::reflect::Reflect>,
+    ) -> Option<PyResult<Py<PyAny>>> {
+        let downcast = self.downcast_from_reflect_fns.get(&type_hash)?;
+        Some(downcast(py, comp))
     }
 
     pub fn entity_has_comp(
