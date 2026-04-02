@@ -17,3 +17,5 @@ darling = "0.23"
 minimal-pyo3 = []
 py-ref = []
 py-bevy = ["py-ref"]
+# generate stubs for to_owned method
+gen-to-owned-stubs = []

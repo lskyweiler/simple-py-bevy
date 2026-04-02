@@ -5,6 +5,51 @@ use darling::FromMeta;
 use proc_macro::TokenStream;
 use quote::quote;
 
+pub(crate) fn export_to_owned_stubs(
+    _struct_name: &syn::Ident,
+    _py_name: &str,
+) -> proc_macro2::TokenStream {
+    #[cfg(feature = "gen-to-owned-stubs")]
+    {
+        quote! {
+            pyo3_stub_gen::inventory::submit! {
+                pyo3_stub_gen::type_info::PyMethodsInfo {
+                    struct_id: std::any::TypeId::of::<#_struct_name>,
+                    attrs: &[],
+                    getters: &[],
+                    setters: &[],
+                    methods: &[
+                        pyo3_stub_gen::type_info::MethodInfo {
+                            name: "to_owned",
+                            r#return: || pyo3_stub_gen::TypeInfo {
+                                name: #_py_name.to_string(),
+                                source_module: None,
+                                import: std::collections::HashSet::new(),
+                                type_refs: std::collections::HashMap::new()
+                            },
+                            doc: "Convert this reference to an owned value by cloning it",
+                            parameters: &[],
+                            is_async: false,
+                            r#type: pyo3_stub_gen::type_info::MethodType::Instance,
+                            type_ignored: None,
+                            is_overload: false,
+                            deprecated: None
+                        },
+                    ],
+                    file: "",
+                    line: 0,
+                    column: 0
+                }
+            }
+        }
+        .into()
+    }
+    #[cfg(not(feature = "gen-to-owned-stubs"))]
+    {
+        quote! {}.into()
+    }
+}
+
 #[cfg(feature = "minimal-pyo3")]
 #[derive(Debug, FromMeta)]
 #[darling(derive_syn_parse)]
@@ -38,10 +83,14 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
             }
         };
 
+        let to_owned_stubs = export_to_owned_stubs(struct_name, &new_name);
+
         quote!(
             #stub_gen_attr
             #[pyo3::pyclass(name = #new_name)]
             #ast
+
+            #to_owned_stubs
         )
         .into()
     }

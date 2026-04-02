@@ -22,7 +22,7 @@ pyo3 = { workspace = true, optional = true }
 pyo3-stub-gen = { workspace = true, optional = true }
 
 [workspace.package]
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 
 [workspace.dependencies]
@@ -33,6 +33,8 @@ pyo3-stub-gen = { version = "~0.19", default-features = false }
 [features]
 # absolute minimum pyo3 support. useful for only generating stubs
 minimal-pyo3 = ["dep:pyo3", "simple_py_bevy_derive/minimal-pyo3"]
+# generate stubs for to_owned method
+gen-to-owned-stubs = ["simple_py_bevy_derive/gen-to-owned-stubs"]
 # generate bevy macros without pyo3
 bevy = ["dep:bevy"]
 # generates python exposed references to bevy owned data
