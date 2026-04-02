@@ -12,6 +12,8 @@ fn wrap_py_method_with_get_inner(method: &syn::ImplItemFn) -> syn::ImplItemFn {
     let old_arg_names = backend::get_function_argument_names(&method);
 
     match &method.sig.output {
+        // todo: Inputs that match Self should be auto wrapped in Either
+        // fn foo(&self, other: ThisObject) => fn foo(&self, other: Either<ThisObject, ThisObjectBevyRef>)
         syn::ReturnType::Default => {
             new_method.block = syn::parse_quote!(
                 {
