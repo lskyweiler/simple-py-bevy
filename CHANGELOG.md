@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-04-02
+
+### 🚀 Features
+
+- Added derive functions to auto derive to_owned stubs
+
 ## [0.4.0] - 2026-03-24
 
 ### 🚀 Features
 
 - Added method to downcast a boxed reflect from python type hash
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Prep for release v0.4.0
 
 ## [0.3.0] - 2026-03-04
 
