@@ -76,8 +76,9 @@ pub(crate) fn wrap_all_methods_with_get_inner(
             syn::ImplItem::Fn(method) => {
                 let fn_has_new = backend::fn_has_attr_name(&method, "new");
                 let fn_has_staticmeth = backend::fn_has_attr_name(&method, "staticmethod");
+                let fn_has_classmeth = backend::fn_has_attr_name(&method, "classmethod");
                 let fn_has_classattr = backend::fn_has_attr_name(&method, "classattr");
-                if fn_has_new || fn_has_staticmeth || fn_has_classattr {
+                if fn_has_new || fn_has_staticmeth || fn_has_classattr || fn_has_classmeth{
                     // you cant create a reference from python anyway, so ignore pyo3 constructors and static methods for now (#[new, staticmethod] attributes)
                     continue;
                 }
