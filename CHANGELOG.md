@@ -2,11 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2026-07-21
+
+### 🐛 Bug Fixes
+
+- Minor fix to ignore classmethods
+
+### 🚜 Refactor
+
+- Cargo formatted
+
+## [0.5.1] - 2026-04-10
+
+### ⚙️ Miscellaneous Tasks
+
+- Bumped bevy version
+
 ## [0.5.0] - 2026-04-02
 
 ### 🚀 Features
 
 - Added derive functions to auto derive to_owned stubs
+
+### ⚙️ Miscellaneous Tasks
+
+- Prep for release v0.5.0
 
 ## [0.4.0] - 2026-03-24
 
