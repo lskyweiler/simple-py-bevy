@@ -80,6 +80,18 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
             fn to_owned(&self) -> pyo3::prelude::PyResult<#struct_name> {
                 Ok(self.get_inner_ref()?.clone())
             }
+
+            fn dump(&self, pretty: bool) -> pyo3::prelude::PyResult<String> {
+                let inner = self.get_inner_ref()?;
+                let app_type_reg = self.world.get_res::<bevy::prelude::AppTypeRegistry>().unwrap().clone();
+                let type_reg = app_type_reg.read();
+                let serializer = bevy::reflect::serde::ReflectSerializer::new(inner, &type_reg);
+                let out = match pretty {
+                    true => serde_json::to_string_pretty(&serializer).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e))),
+                    false => serde_json::to_string(&serializer).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e))),
+                };
+                out
+            }
         }
 
         impl simple_py_bevy::BevyPyComp for #struct_name {

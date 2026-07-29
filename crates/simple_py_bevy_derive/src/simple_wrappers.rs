@@ -5,7 +5,7 @@ use darling::FromMeta;
 use proc_macro::TokenStream;
 use quote::quote;
 
-pub(crate) fn export_to_owned_stubs(
+pub(crate) fn export_bevy_ref_mirror_fns(
     _struct_name: &syn::Ident,
     _py_name: &str,
 ) -> proc_macro2::TokenStream {
@@ -29,6 +29,47 @@ pub(crate) fn export_to_owned_stubs(
                             },
                             doc: "Convert this reference to an owned value by cloning it",
                             parameters: &[],
+                            is_async: false,
+                            r#type: pyo3_stub_gen::type_info::MethodType::Instance,
+                            type_ignored: None,
+                            is_overload: false,
+                            deprecated: None
+                        },
+                    ],
+                    file: "",
+                    line: 0,
+                    column: 0
+                }
+            }
+            pyo3_stub_gen::inventory::submit! {
+                pyo3_stub_gen::type_info::PyMethodsInfo {
+                    struct_id: std::any::TypeId::of::<#_struct_name>,
+                    attrs: &[],
+                    getters: &[],
+                    setters: &[],
+                    methods: &[
+                        pyo3_stub_gen::type_info::MethodInfo {
+                            name: "dump",
+                            r#return: || pyo3_stub_gen::TypeInfo {
+                                name: #_py_name.to_string(),
+                                source_module: None,
+                                import: std::collections::HashSet::new(),
+                                type_refs: std::collections::HashMap::new()
+                            },
+                            doc: "Dump this component to a json string",
+                            parameters: &[
+                                pyo3_stub_gen::type_info::ParameterInfo {
+                                    name: "pretty",
+                                    kind: pyo3_stub_gen::type_info::ParameterKind::PositionalOrKeyword,
+                                    type_info: || pyo3_stub_gen::TypeInfo {
+                                        name: "bool".to_string(),
+                                        source_module: None,
+                                        import: std::collections::HashSet::new(),
+                                        type_refs: std::collections::HashMap::new()
+                                    },
+                                    default: pyo3_stub_gen::type_info::ParameterDefault::Expr(|| "False".to_string())
+                                }
+                            ],
                             is_async: false,
                             r#type: pyo3_stub_gen::type_info::MethodType::Instance,
                             type_ignored: None,
@@ -83,7 +124,7 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
             }
         };
 
-        let to_owned_stubs = export_to_owned_stubs(struct_name, &new_name);
+        let to_owned_stubs = export_bevy_ref_mirror_fns(struct_name, &new_name);
 
         quote!(
             #stub_gen_attr
