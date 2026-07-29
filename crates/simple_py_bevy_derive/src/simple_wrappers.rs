@@ -49,9 +49,9 @@ pub(crate) fn export_bevy_ref_mirror_fns(
                     setters: &[],
                     methods: &[
                         pyo3_stub_gen::type_info::MethodInfo {
-                            name: "dump",
+                            name: "dumps",
                             r#return: || pyo3_stub_gen::TypeInfo {
-                                name: #_py_name.to_string(),
+                                name: "str".to_string(),
                                 source_module: None,
                                 import: std::collections::HashSet::new(),
                                 type_refs: std::collections::HashMap::new()
