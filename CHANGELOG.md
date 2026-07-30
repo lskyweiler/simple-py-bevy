@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-07-30
+
+### 🚀 Features
+
+- Added dumping comps to bevy ref macro
+
+### 🐛 Bug Fixes
+
+- Added pyo3 signature to dumps
+- Added dumps to all base components
+
 ## [0.5.2] - 2026-07-21
 
 ### 🐛 Bug Fixes
@@ -11,6 +22,10 @@ All notable changes to this project will be documented in this file.
 ### 🚜 Refactor
 
 - Cargo formatted
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Prep for release v0.5.2
 
 ## [0.5.1] - 2026-04-10
 
