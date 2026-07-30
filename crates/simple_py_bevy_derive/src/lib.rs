@@ -154,7 +154,7 @@ pub fn derive_py_to_owned_stub(_input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(_input as syn::DeriveInput);
     let struct_name = &ast.ident;
     let py_name = format!(r#"{}"#, struct_name);
-    simple_wrappers::export_to_owned_stubs(struct_name, &py_name).into()
+    simple_wrappers::export_bevy_ref_mirror_fns(struct_name, &py_name).into()
 }
 
 /// Needed to mock pyo3 macro attributes in case we're not using the pyo3 feature

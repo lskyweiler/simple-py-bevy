@@ -80,6 +80,27 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
             fn to_owned(&self) -> pyo3::prelude::PyResult<#struct_name> {
                 Ok(self.get_inner_ref()?.clone())
             }
+
+            #[pyo3(signature = (pretty = false))]
+            fn dumps(&self, pretty: bool) -> pyo3::prelude::PyResult<String> {
+                let inner = self.get_inner_ref()?;
+                let out = match pretty {
+                    true => serde_json::to_string_pretty(&inner).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e))),
+                    false => serde_json::to_string(&inner).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e))),
+                };
+                out
+            }
+        }
+        #[pyo3::pymethods]
+        impl #struct_name {
+            #[pyo3(signature = (pretty = false))]
+            fn dumps(&self, pretty: bool) -> pyo3::prelude::PyResult<String> {
+                let out = match pretty {
+                    true => serde_json::to_string_pretty(&self).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e))),
+                    false => serde_json::to_string(&self).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e))),
+                };
+                out
+            }
         }
 
         impl simple_py_bevy::BevyPyComp for #struct_name {
