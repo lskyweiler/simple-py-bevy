@@ -91,6 +91,17 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
                 out
             }
         }
+        #[pyo3::pymethods]
+        impl #struct_name {
+            #[pyo3(signature = (pretty = false))]
+            fn dumps(&self, pretty: bool) -> pyo3::prelude::PyResult<String> {
+                let out = match pretty {
+                    true => serde_json::to_string_pretty(&self).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e))),
+                    false => serde_json::to_string(&self).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e))),
+                };
+                out
+            }
+        }
 
         impl simple_py_bevy::BevyPyComp for #struct_name {
             fn into_bevy_ref_py_any_from_world<'py>(
