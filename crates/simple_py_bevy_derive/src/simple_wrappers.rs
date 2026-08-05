@@ -162,7 +162,7 @@ pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenS
 
         quote!(
             #[pyo3_stub_gen::derive::gen_stub_pyclass_enum(module = #new_mod)]
-            #[pyo3::pyclass(name = #new_name, eq)]  // the only real difference between the enum and pyclass impls
+            #[pyo3::pyclass(name = #new_name, eq, module = #new_mod)]  // the only real difference between the enum and pyclass impls
             #ast
         )
         .into()
