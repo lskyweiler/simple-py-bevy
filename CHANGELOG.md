@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-08-07
+
+### 🚀 Features
+
+- Added unpack py functions
+
+### 🐛 Bug Fixes
+
+- Added option to set module for simple_pyclass
+- Fixed minor bug in simple enum macro
+
+### ⚙️ Miscellaneous Tasks
+
+- Cargo locked
+
 ## [0.6.0] - 2026-07-30
 
 ### 🚀 Features
@@ -12,6 +27,10 @@ All notable changes to this project will be documented in this file.
 
 - Added pyo3 signature to dumps
 - Added dumps to all base components
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Prep for release v0.6.0
 
 ## [0.5.2] - 2026-07-21
 
