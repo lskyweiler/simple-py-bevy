@@ -91,6 +91,7 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
                 out
             }
         }
+
         #[pyo3::pymethods]
         impl #struct_name {
             #[pyo3(signature = (pretty = false))]
@@ -101,6 +102,23 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
                 };
                 out
             }
+
+            // add hooks to allow serializing as python objects using [unpack](https://github.com/lskyweiler/unpack)
+
+            fn __unpack_dump__<'py>(&self, py: pyo3::prelude::Python<'py>) -> pyo3::prelude::PyResult<pyo3::prelude::Bound<'py, pyo3::prelude::PyAny>> {
+                let json = py.import("json")?;
+                let json_str = self.dumps(false)?;
+                <pyo3::prelude::Bound<'py, pyo3::prelude::PyAny> as pyo3::types::PyAnyMethods>::call_method1(json.as_any(), "loads", (json_str, ))
+            }
+            #[staticmethod]
+            fn __unpack_load__<'py>(value: pyo3::prelude::Bound<'py, pyo3::prelude::PyAny>) -> pyo3::prelude::PyResult<Self> {
+                let json = value.py().import("json")?;
+                let json_str_any = <pyo3::prelude::Bound<'py, pyo3::prelude::PyAny> as pyo3::types::PyAnyMethods>::call_method1(json.as_any(), "dumps", (value.clone(), ))?;
+                let json_str = json_str_any.to_string();
+                let out: #struct_name = serde_json::from_str(&json_str).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+                Ok(out)
+            }
+
         }
 
         impl simple_py_bevy::BevyPyComp for #struct_name {

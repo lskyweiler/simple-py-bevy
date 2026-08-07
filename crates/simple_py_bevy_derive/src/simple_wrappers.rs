@@ -98,7 +98,7 @@ struct ConfigStructArgs {
     #[darling(default)]
     name: Option<String>,
     #[darling(default)]
-    stub_gen_module: Option<String>,
+    module: Option<String>,
 }
 
 pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> TokenStream {
@@ -115,20 +115,16 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
             Some(n) => format!(r#"{}"#, n),
             None => format!(r#"{}"#, struct_name),
         };
-        let stub_gen_attr = match &args.stub_gen_module {
-            Some(module) => {
-                quote! { #[pyo3_stub_gen::derive::gen_stub_pyclass(module = #module)] }
-            }
-            None => {
-                quote! { #[pyo3_stub_gen::derive::gen_stub_pyclass] }
-            }
+        let new_mod = match &args.module {
+            Some(n) => format!(r#"{}"#, n),
+            None => format!(r#"{}"#, "builtins"),
         };
 
         let to_owned_stubs = export_bevy_ref_mirror_fns(struct_name, &new_name);
 
         quote!(
-            #stub_gen_attr
-            #[pyo3::pyclass(name = #new_name)]
+            #[pyo3_stub_gen::derive::gen_stub_pyclass(module = #new_mod)] 
+            #[pyo3::pyclass(name = #new_name, module = #new_mod)]
             #ast
 
             #to_owned_stubs
@@ -159,18 +155,14 @@ pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenS
             Some(n) => format!(r#"{}"#, n),
             None => format!(r#"{}"#, struct_name),
         };
-        let stub_gen_attr = match &args.stub_gen_module {
-            Some(module) => {
-                quote! { #[pyo3_stub_gen::derive::gen_stub_pyclass_enum(module = #module)] }
-            }
-            None => {
-                quote! { #[pyo3_stub_gen::derive::gen_stub_pyclass_enum] }
-            }
+        let new_mod = match &args.module {
+            Some(n) => format!(r#"{}"#, n),
+            None => format!(r#"{}"#, "builtins"),
         };
 
         quote!(
-            #stub_gen_attr
-            #[pyo3::pyclass(name = #new_name, eq)]  // the only real difference between the enum and pyclass impls
+            #[pyo3_stub_gen::derive::gen_stub_pyclass_enum(module = #new_mod)]
+            #[pyo3::pyclass(name = #new_name, eq, module = #new_mod)]  // the only real difference between the enum and pyclass impls
             #ast
         )
         .into()
