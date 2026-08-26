@@ -77,6 +77,9 @@ mod pyo3_traits {
             world_ref: UnsafeWorldRef,
             entity: Entity,
         ) -> PyResult<()>;
+
+        // todo: this should be in DowncastReflect, but resources were throwing a lot of issues
+        fn reflect_from_py_any<'py>(py: Python<'py>, pyany: &Py<PyAny>) -> PyResult<Box<dyn bevy::reflect::Reflect>>;
     }
     pub trait DowncastReflect {
         fn downcast_into_py_any<'py>(py: Python<'py>, reflect: &Box<dyn bevy::reflect::Reflect>) -> PyResult<Py<PyAny>>;
