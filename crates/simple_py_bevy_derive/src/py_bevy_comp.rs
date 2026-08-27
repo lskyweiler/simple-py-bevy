@@ -162,6 +162,16 @@ pub(crate) fn derive_py_bevy_comp_struct_impl(ast: &syn::DeriveInput) -> proc_ma
                 })?;
                 Ok(())
             }
+
+            fn reflect_from_py_any<'py>(
+                py: pyo3::Python<'py>, 
+                pyany: &pyo3::Py<pyo3::PyAny>
+            ) -> pyo3::PyResult<Box<dyn bevy::reflect::Reflect>> {
+                let extracted: #struct_name = pyany.extract(py)?;
+                let boxed = Box::new(extracted);
+                let out: Box<dyn bevy::reflect::Reflect> = <#struct_name as bevy::reflect::Reflect>::into_reflect(boxed);
+                Ok(out)
+            }
         }
     )
     .into()

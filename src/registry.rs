@@ -14,6 +14,7 @@ type BevyEntHashCompFn = fn(world_ref::UnsafeWorldRef, Entity) -> PyResult<bool>
 type BevyCompInsertFromBoundAny =
     fn(Bound<'_, PyAny>, world_ref::UnsafeWorldRef, Entity) -> PyResult<()>;
 type DowncastReflectFn = fn(Python<'_>, &Box<dyn bevy::reflect::Reflect>) -> PyResult<Py<PyAny>>;
+type PyAnyToReflectFn = fn(Python<'_>, &Py<PyAny>) -> PyResult<Box<dyn bevy::reflect::Reflect>>;
 
 /// Registry mapping py_classes to internal bevy components and resources
 #[derive(Resource)]
@@ -34,6 +35,7 @@ pub struct PyObjectRegistry {
     remove_comp_and_return_fns: HashMap<u128, RemoveCompAndReturnOwnedFromWorldFn>,
     built_in_has_comps: HashMap<u128, BevyEntHashCompFn>,
     build_in_insert_comps: HashMap<u128, BevyCompInsertFromBoundAny>,
+    pyany_to_boxed_comps: HashMap<u128, PyAnyToReflectFn>
 }
 impl PyObjectRegistry {
     pub fn new() -> Self {
@@ -46,6 +48,7 @@ impl PyObjectRegistry {
             remove_comp_and_return_fns: HashMap::new(),
             built_in_has_comps: HashMap::new(),
             build_in_insert_comps: HashMap::new(),
+            pyany_to_boxed_comps: HashMap::new()
         }
     }
     pub fn register_res<T: GetTypeHash + BevyPyRes + DowncastReflect>(&mut self) {
@@ -69,6 +72,8 @@ impl PyObjectRegistry {
         self.built_in_has_comps.insert(hash, T::has_component);
         self.build_in_insert_comps
             .insert(hash, T::insert_into_world_from_bound_any);
+        self.pyany_to_boxed_comps
+            .insert(hash, T::reflect_from_py_any);
     }
     pub fn create_bevy_res_ref<'py>(
         &self,
@@ -117,6 +122,15 @@ impl PyObjectRegistry {
     ) -> Option<PyResult<Py<PyAny>>> {
         let downcast = self.downcast_from_reflect_fns.get(&type_hash)?;
         Some(downcast(py, comp))
+    }
+    pub fn py_any_to_boxed_reflect<'py>(
+        &self,
+        py: Python<'py>,
+        type_hash: u128,
+        comp: &Py<PyAny>,
+    ) -> Option<PyResult<Box<dyn Reflect>>> {
+        let convert = self.pyany_to_boxed_comps.get(&type_hash)?;
+        Some(convert(py, comp))
     }
 
     pub fn entity_has_comp(
