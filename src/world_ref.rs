@@ -97,7 +97,7 @@ impl UnsafeWorldRef {
     pub fn has_res<'w, R: Resource>(&self) -> PyResult<bool> {
         self.map_to_world(|world| Ok(world.get_resource::<R>().is_some()))
     }
-    pub fn get_res_mut<R: Resource>(&self) -> PyResult<Mut<'_, R>> {
+    pub fn get_res_mut<R: Resource<Mutability = Mutable>>(&self) -> PyResult<Mut<'_, R>> {
         self.map_to_world(|world| match world.get_resource_mut::<R>() {
             Some(comp) => Ok(comp),
             None => Err(PyValueError::new_err(format!(
