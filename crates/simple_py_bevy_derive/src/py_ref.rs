@@ -13,7 +13,7 @@ pub(crate) fn py_ref_struct_impl(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
 
     quote::quote!(
         #[derive(Clone)]
-        #[pyo3::pyclass(unsendable)]
+        #[pyo3::pyclass(unsendable, from_py_object)]
         pub struct #py_ref_name {
             parent_ref: std::ptr::NonNull<#struct_name>,
             alive_ptr: std::sync::Weak<bool>

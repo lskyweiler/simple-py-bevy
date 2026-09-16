@@ -67,7 +67,7 @@ pub(crate) fn export_bevy_ref_mirror_fns(
                                         import: std::collections::HashSet::new(),
                                         type_refs: std::collections::HashMap::new()
                                     },
-                                    default: pyo3_stub_gen::type_info::ParameterDefault::Expr(|| "False".to_string())
+                                    default: pyo3_stub_gen::type_info::ParameterDefault::Expr{value: || "False".to_string(), source_module: None}
                                 }
                             ],
                             is_async: false,
@@ -123,8 +123,8 @@ pub(crate) fn simple_pyclass_impl(_args: TokenStream, ast: syn::ItemStruct) -> T
         let to_owned_stubs = export_bevy_ref_mirror_fns(struct_name, &new_name);
 
         quote!(
-            #[pyo3_stub_gen::derive::gen_stub_pyclass(module = #new_mod)] 
-            #[pyo3::pyclass(name = #new_name, module = #new_mod)]
+            #[pyo3_stub_gen::derive::gen_stub_pyclass(module = #new_mod)]
+            #[pyo3::pyclass(name = #new_name, module = #new_mod, from_py_object)]
             #ast
 
             #to_owned_stubs
@@ -162,7 +162,7 @@ pub(crate) fn simple_enum_impl(_args: TokenStream, ast: syn::ItemEnum) -> TokenS
 
         quote!(
             #[pyo3_stub_gen::derive::gen_stub_pyclass_enum(module = #new_mod)]
-            #[pyo3::pyclass(name = #new_name, eq, module = #new_mod)]  // the only real difference between the enum and pyclass impls
+            #[pyo3::pyclass(name = #new_name, eq, module = #new_mod, from_py_object)]  // the only real difference between the enum and pyclass impls
             #ast
         )
         .into()
