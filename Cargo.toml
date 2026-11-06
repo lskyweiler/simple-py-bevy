@@ -26,8 +26,8 @@ version = "0.7.0"
 edition = "2021"
 
 [workspace.dependencies]
-bevy = "0.19"
-pyo3 = "0.29"
+bevy = "0.18"
+pyo3 = "0.30"
 pyo3-stub-gen = { version = "0.23", default-features = false }
 
 [features]
