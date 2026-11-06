@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2026-11-06
+
+### 🐛 Bug Fixes
+
+- Working with pyo3 29 and stub-gen 32
+
+## [0.7.1] - 2026-08-27
+
+### 🚀 Features
+
+- Added method to convert a pyany object to a boxed reflect
+
 ## [0.7.0] - 2026-08-07
 
 ### 🚀 Features
@@ -16,6 +28,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Cargo locked
+- *(release)* Prep for release v0.7.0
 
 ## [0.6.0] - 2026-07-30
 

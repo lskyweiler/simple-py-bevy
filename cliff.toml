@@ -60,6 +60,9 @@ commit_preprocessors = [
 ]
 # regex for parsing and grouping commits
 commit_parsers = [
+  { sha = "c8d28596c7f5480b40d47491685ab073b2e7e2ae", skip = true },
+  { sha = "6d1e40b1cda2a51c95b2d1b797a5cfdce76209bf", skip = true },
+  { sha = "72a9f39f4055e16db75be6117ffde254f653aed7", skip = true },
   { message = "^feat", group = "<!-- 0 -->🚀 Features" },
   { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
   { message = "^doc", group = "<!-- 3 -->📚 Documentation" },
